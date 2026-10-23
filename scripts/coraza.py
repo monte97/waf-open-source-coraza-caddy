@@ -86,8 +86,16 @@ def info():
 def elenco():
     c, profilo = container(); e = env(c); pl = livello(c, e)
     # come nella slide: le regole sulle richieste (REQUEST-9xx) che hanno un livello di paranoia
-    rr = [r for r in regole(c) if r["file"].startswith("REQUEST") and r["pl"]]
-    print(f"\n{AZZURRO}» le regole del CRS sulle richieste, per livello di paranoia{FINE}  (profilo {profilo}, livello {pl})\n")
+    tutte = regole(c)
+    rr = [r for r in tutte if r["file"].startswith("REQUEST") and r["pl"]]
+    risposte = [r for r in tutte if r["file"].startswith("RESPONSE") and r["pl"]]
+    servizio = len(tutte) - len(rr) - len(risposte)
+    print(f"\n{AZZURRO}» le regole del CRS a disposizione, in tutto{FINE}\n")
+    print(f"  {BIANCO}{len(tutte):>4}{FINE} regole nel CRS di questa immagine, qualunque sia il livello")
+    print(f"  {TENUE}{len(rr):>4} sulle richieste, ognuna con il suo livello di paranoia{FINE}")
+    print(f"  {TENUE}{len(risposte):>4} sulle risposte (fughe di dati, web shell){FINE}")
+    print(f"  {TENUE}{servizio:>4} di servizio: impostazioni, salti di livello, conteggio dei punti{FINE}")
+    print(f"\n{AZZURRO}» quelle sulle richieste, per livello di paranoia{FINE}  (profilo {profilo}, livello {pl})\n")
     for n in range(1, 5):
         tot = sum(1 for r in rr if r["pl"] <= n)
         segno = f"  {VERDE}← acceso{FINE}" if n == pl else ""
