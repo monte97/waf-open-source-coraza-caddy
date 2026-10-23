@@ -1,0 +1,12 @@
+# Caddyfile SENZA il WAF.
+#
+# Un reverse proxy e basta: quello che molti hanno gia' davanti ai propri
+# servizi. Fa il suo mestiere, inoltra tutto, e non guarda cosa inoltra.
+#
+# Il diff con waf.Caddyfile e' tutto il talk.
+
+:80 {
+	# Il servizio PHP della prova su PHP2Shell (make php2shell).
+	reverse_proxy /php/* php:80
+	reverse_proxy app:8000
+}

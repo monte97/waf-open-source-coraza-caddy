@@ -1,0 +1,140 @@
+# Cinque profili, uno per ogni stato del racconto.
+#
+#   make nowaf     l'attacco arriva all'applicazione
+#   make detect    il WAF guarda e scrive nel log, non blocca
+#   make block     il WAF blocca, 403
+#   make paranoid  paranoia 3: copre di piu' e blocca anche traffico onesto
+#   make tuned     paranoia 3 con il falso positivo risolto
+#
+# `app` non ha profili, quindi parte sempre. Le cinque varianti di Caddy
+# pubblicano tutte la porta 8080: se ne accende UNA per volta, altrimenti la
+# porta e' occupata. Il Makefile fa il `down` prima di ogni `up` apposta.
+#
+# I due Caddyfile sono montati per davvero: quello che si vede a schermo
+# durante il talk e' quello che gira.
+#
+# MANUAL_MODE: l'immagine, di suo, riscrive crs-setup.conf partendo dalle
+# variabili d'ambiente e attiva la regola 900000 (la paranoia). Qui la
+# paranoia sta in un file, tuning/<profilo>/prima, perche' un file si legge a
+# schermo: senza MANUAL_MODE le due 900000 si scontrano e Caddy non parte
+# ("duplicated rule id").
+
+x-caddy: &caddy
+  # Immagine del team OWASP CRS: Caddy 2.11.4, plugin Coraza, CRS 4.30.0,
+  # amd64 e arm64. Il tag con la data fissa la build misurata: `caddy-alpine`
+  # da solo si sposta a ogni rilascio.
+  image: ghcr.io/coreruleset/coraza-crs:4.30.0-caddy-alpine-202610110510
+  ports:
+    - "8080:80"
+  depends_on:
+    - app
+    - php
+  networks:
+    - waf
+
+services:
+
+  app:
+    image: python:3.12-alpine
+    command: python /srv/app.py
+    volumes:
+      - ./app/app.py:/srv/app.py:ro
+    networks:
+      - waf
+
+  # Un servizio PHP dietro al WAF, per la prova su PHP2Shell. Il tag fissa
+  # una versione gia' corretta: 8.4.27, uscita il 21/10/2026.
+  php:
+    image: php:8.4.27-apache
+    volumes:
+      - ./php:/var/www/html:ro
+    networks:
+      - waf
+
+  # ── senza WAF ────────────────────────────────────────────────────────────
+  caddy-nowaf:
+    <<: *caddy
+    profiles: ["nowaf"]
+    volumes:
+      - ./caddy/nowaf.Caddyfile:/config/caddy/Caddyfile:ro
+
+  # ── WAF in ascolto, non blocca ───────────────────────────────────────────
+  caddy-detect:
+    <<: *caddy
+    profiles: ["detect"]
+    environment:
+      CORAZA_RULE_ENGINE: DetectionOnly
+      MANUAL_MODE: "1"
+    volumes:
+      - ./caddy/waf.Caddyfile:/config/caddy/Caddyfile:ro
+      - ./tuning/default/prima:/opt/coraza/config.d:ro
+      - ./tuning/default/dopo:/opt/coraza/rules.d:ro
+
+  # ── WAF che blocca ───────────────────────────────────────────────────────
+  caddy-block:
+    <<: *caddy
+    profiles: ["block"]
+    environment:
+      CORAZA_RULE_ENGINE: On
+      MANUAL_MODE: "1"
+    volumes:
+      - ./caddy/waf.Caddyfile:/config/caddy/Caddyfile:ro
+      - ./tuning/default/prima:/opt/coraza/config.d:ro
+      - ./tuning/default/dopo:/opt/coraza/rules.d:ro
+
+  # ── WAF che blocca troppo ────────────────────────────────────────────────
+  # Paranoia alzata a 3: copre di piu' e comincia a fermare traffico onesto.
+  caddy-paranoid:
+    <<: *caddy
+    profiles: ["paranoid"]
+    environment:
+      CORAZA_RULE_ENGINE: On
+      MANUAL_MODE: "1"
+    volumes:
+      - ./caddy/waf.Caddyfile:/config/caddy/Caddyfile:ro
+      - ./tuning/paranoid/prima:/opt/coraza/config.d:ro
+      - ./tuning/paranoid/dopo:/opt/coraza/rules.d:ro
+
+  # ── WAF che blocca, con il falso positivo risolto ────────────────────────
+  # Stessa paranoia 3 di `paranoid`, piu' le esclusioni in tuning/tuned/dopo.
+  # Gli ID vanno misurati, non indovinati: si leggono nel log del profilo
+  # `paranoid` quando la richiesta legittima viene fermata.
+  caddy-tuned:
+    <<: *caddy
+    profiles: ["tuned"]
+    environment:
+      CORAZA_RULE_ENGINE: On
+      MANUAL_MODE: "1"
+    volumes:
+      - ./caddy/waf.Caddyfile:/config/caddy/Caddyfile:ro
+      - ./tuning/tuned/prima:/opt/coraza/config.d:ro
+      - ./tuning/tuned/dopo:/opt/coraza/rules.d:ro
+
+  # ── WAF che blocca, e guarda anche dentro il Base64 ───────────────────────
+  # Livello 1 come `block`, piu' tre regole in tuning/base64/dopo.
+  caddy-base64:
+    <<: *caddy
+    profiles: ["base64"]
+    environment:
+      CORAZA_RULE_ENGINE: On
+      MANUAL_MODE: "1"
+    volumes:
+      - ./caddy/waf.Caddyfile:/config/caddy/Caddyfile:ro
+      - ./tuning/default/prima:/opt/coraza/config.d:ro
+      - ./tuning/base64/dopo:/opt/coraza/rules.d:ro
+
+  # ── WAF che blocca, con la toppa per PHP2Shell ───────────────────────────
+  # Livello 1 come `block`, piu' due regole su misura in tuning/toppa/dopo.
+  caddy-toppa:
+    <<: *caddy
+    profiles: ["toppa"]
+    environment:
+      CORAZA_RULE_ENGINE: On
+      MANUAL_MODE: "1"
+    volumes:
+      - ./caddy/waf.Caddyfile:/config/caddy/Caddyfile:ro
+      - ./tuning/default/prima:/opt/coraza/config.d:ro
+      - ./tuning/toppa/dopo:/opt/coraza/rules.d:ro
+
+networks:
+  waf:

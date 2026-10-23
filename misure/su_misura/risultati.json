@@ -1,0 +1,70 @@
+{
+ "esclusioni": [
+  "932190",
+  "932236",
+  "932250",
+  "942190",
+  "942200",
+  "942330",
+  "942390",
+  "942431",
+  "942440",
+  "942460",
+  "942480",
+  "942521"
+ ],
+ "block": {
+  "attacchi": {
+   "fermate": 102,
+   "totale": 192
+  },
+  "attacchi_senza_base64": {
+   "fermate": 102,
+   "totale": 137
+  },
+  "oneste_viste": {
+   "fermate": 3,
+   "totale": 24
+  },
+  "oneste_nuove": {
+   "fermate": 2,
+   "totale": 23
+  }
+ },
+ "paranoid": {
+  "attacchi": {
+   "fermate": 125,
+   "totale": 192
+  },
+  "attacchi_senza_base64": {
+   "fermate": 125,
+   "totale": 137
+  },
+  "oneste_viste": {
+   "fermate": 11,
+   "totale": 24
+  },
+  "oneste_nuove": {
+   "fermate": 12,
+   "totale": 23
+  }
+ },
+ "sumisura": {
+  "attacchi": {
+   "fermate": 124,
+   "totale": 192
+  },
+  "attacchi_senza_base64": {
+   "fermate": 124,
+   "totale": 137
+  },
+  "oneste_viste": {
+   "fermate": 0,
+   "totale": 24
+  },
+  "oneste_nuove": {
+   "fermate": 8,
+   "totale": 23
+  }
+ }
+}

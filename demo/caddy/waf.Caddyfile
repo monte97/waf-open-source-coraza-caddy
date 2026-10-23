@@ -1,0 +1,45 @@
+# Caddyfile CON il WAF.
+#
+# Questo file viene montato in /config/caddy/Caddyfile: e' davvero il file
+# che Caddy esegue, non un esempio. Confrontalo con nowaf.Caddyfile: la
+# differenza e' il blocco coraza_waf e la riga qui sotto.
+{
+	# coraza_waf viene da un plugin, e Caddy non sa in che punto della catena
+	# metterlo: senza questa riga si rifiuta di partire. `first` lo mette
+	# davanti a tutto, quindi la richiesta viene controllata prima che
+	# reverse_proxy la consegni all'applicazione.
+	order coraza_waf first
+}
+
+:80 {
+	# Fra i backtick c'e' configurazione SecLang, la lingua delle regole di
+	# ModSecurity e del CRS. Caddy la passa a Coraza cosi' com'e'.
+	coraza_waf {
+		directives `
+			# Configurazione del motore. SecRuleEngine vive qui dentro ed e'
+			# scritto dalla variabile d'ambiente CORAZA_RULE_ENGINE: e' cosi'
+			# che i profili detect e block si distinguono.
+			Include /opt/coraza/config/coraza.conf
+
+			# OWASP Core Rule Set: setup.
+			Include /opt/coraza/config/crs-setup.conf
+
+			# Tuning del profilo, prima parte: qui si alza il livello di
+			# paranoia. Sta fra il setup e le regole perche' deve valere
+			# prima che le regole vengano valutate.
+			Include /opt/coraza/config.d/*.conf
+
+			# OWASP Core Rule Set: le regole.
+			Include /opt/coraza/owasp-crs/rules/*.conf
+
+			# Esclusioni del profilo. Stanno DOPO le regole perche' le
+			# nominano: un'esclusione su una regola non ancora definita fa
+			# fallire l'avvio.
+			Include /opt/coraza/rules.d/*.conf
+		`
+	}
+
+	# Il servizio PHP della prova su PHP2Shell (make php2shell).
+	reverse_proxy /php/* php:80
+	reverse_proxy app:8000
+}

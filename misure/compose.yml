@@ -1,0 +1,40 @@
+# Sovrascrive `app` con il backend da misura. L'app della demo risponde 404 o
+# 501 fuori da /search, e gli scanner classificherebbero quelle risposte come
+# "non risolte". I percorsi sono relativi a demo/, la cartella del compose
+# principale.
+services:
+  app:
+    command: python /srv/catchall.py
+    volumes:
+      - ../misure/catchall.py:/srv/catchall.py:ro
+
+  # ── WAF su misura (misure/su_misura, make su-misura) ─────────────────────
+  # «guarda»: livello 3 con soglia 10000, annota senza bloccare.
+  # «sumisura»: livello 3 con le esclusioni ricavate dal registro di «guarda».
+  caddy-guarda:
+    image: ghcr.io/coreruleset/coraza-crs:4.30.0-caddy-alpine-202610110510
+    profiles: ["guarda"]
+    ports: ["8080:80"]
+    depends_on: [app, php]
+    networks: [waf]
+    environment:
+      CORAZA_RULE_ENGINE: On
+      MANUAL_MODE: "1"
+    volumes:
+      - ./caddy/waf.Caddyfile:/config/caddy/Caddyfile:ro
+      - ../misure/su_misura/guarda:/opt/coraza/config.d:ro
+      - ./tuning/default/dopo:/opt/coraza/rules.d:ro
+
+  caddy-sumisura:
+    image: ghcr.io/coreruleset/coraza-crs:4.30.0-caddy-alpine-202610110510
+    profiles: ["sumisura"]
+    ports: ["8080:80"]
+    depends_on: [app, php]
+    networks: [waf]
+    environment:
+      CORAZA_RULE_ENGINE: On
+      MANUAL_MODE: "1"
+    volumes:
+      - ./caddy/waf.Caddyfile:/config/caddy/Caddyfile:ro
+      - ./tuning/paranoid/prima:/opt/coraza/config.d:ro
+      - ../misure/su_misura/generato:/opt/coraza/rules.d:ro

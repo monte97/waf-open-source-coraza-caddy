@@ -1,0 +1,12 @@
+# Docker
+docker-compose.override.yml
+
+# Caddy
+demo/caddy_data/
+demo/caddy_config/
+
+# OS
+.DS_Store
+
+# Report grezzi degli scanner
+misure/risultati/
