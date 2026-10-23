@@ -86,6 +86,22 @@ def info():
                 print(f"  {'':<22} {GIALLO}{r.strip()}{FINE}")
     elenco(c, profilo)
 
+def correzioni(c):
+    """Dalle vostre correzioni (config.d e rules.d): regole spente del tutto e regole a cui avete tolto un campo."""
+    testo = sh("docker", "exec", c, "sh", "-c", "cat /opt/coraza/config.d/*.conf /opt/coraza/rules.d/*.conf 2>/dev/null")
+    righe = [r.strip() for r in testo.splitlines() if r.strip() and not r.lstrip().startswith("#")]
+    spente, ridotte = set(), {}
+    for r in righe:
+        m = re.match(r"SecRuleRemoveById\s+(.+)", r)
+        if m:
+            spente |= set(re.findall(r"\d+", m[1]))
+        m = re.match(r'SecRuleUpdateTargetById\s+(\d+)\s+"!([^"]+)"', r)
+        if m:
+            ridotte.setdefault(m[1], []).append(m[2])
+        for rid, campo in re.findall(r"ruleRemoveTargetById=(\d+);([^\"',\s]+)", r):
+            ridotte.setdefault(rid, []).append(campo)
+    return spente, ridotte
+
 def elenco(c, profilo):
     e = env(c); pl = livello(c, e)
     # come nella slide: le regole sulle richieste (REQUEST-9xx) che hanno un livello di paranoia
@@ -99,10 +115,25 @@ def elenco(c, profilo):
     print(f"  {TENUE}{len(risposte):>4} sulle risposte (fughe di dati, web shell){FINE}")
     print(f"  {TENUE}{servizio:>4} di servizio: impostazioni, salti di livello, conteggio dei punti{FINE}")
     print(f"\n{AZZURRO}» quelle sulle richieste, per livello di paranoia{FINE}  (profilo {profilo}, livello {pl})\n")
+    spente, ridotte = correzioni(c)
+    accese_ids = {r["id"] for r in rr if r["pl"] <= pl}
+    spente &= accese_ids
+    ridotte = {k: v for k, v in ridotte.items() if k in accese_ids and k not in spente}
     for n in range(1, 5):
         tot = sum(1 for r in rr if r["pl"] <= n)
-        segno = f"  {VERDE}← acceso{FINE}" if n == pl else ""
+        segno = ""
+        if n == pl:
+            segno = f"  {VERDE}← acceso{FINE}"
+            if spente:
+                segno += f"  {GIALLO}{tot - len(spente)} dopo le vostre correzioni: {len(spente)} spente{FINE}"
         print(f"  {TENUE}fino al livello {n}{FINE}  {BIANCO}{tot:>4}{FINE} regole{segno}")
+    if ridotte:
+        print(f"\n  {GIALLO}{len(ridotte)} di queste le avete corrette:{FINE} restano accese, ma non guardano un campo")
+        for rid, campi in sorted(ridotte.items()):
+            msg = next((r["msg"] for r in rr if r["id"] == rid), "")
+            print(f"    {GIALLO}{rid}{FINE}  {TENUE}{msg[:52]:<52}{FINE}  non guarda {BIANCO}{', '.join(campi)}{FINE}")
+    if spente:
+        print(f"\n  {GIALLO}{len(spente)} le avete spente del tutto:{FINE} {', '.join(sorted(spente))}")
     print(f"\n{AZZURRO}» per famiglia: accese al livello {pl}, su tutte{FINE}\n")
     conta = {}
     for r in rr:
