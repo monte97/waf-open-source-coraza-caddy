@@ -153,23 +153,6 @@ Il giro è quello della documentazione CRS ([Anomaly Scoring](https://corerulese
 - I numeri differiscono da quelli della tabella GoTestWAF qui sopra perché qui non ci sono duplicati fra posizioni e tutto passa dallo stesso campo.
 - `misura.py` manda header da browser: con lo user agent di Python e senza `Accept`, al livello 3 il CRS bloccherebbe tutto per quello.
 
-### Guardare dentro il Base64
-
-Misurato il 2026-10-23, GoTestWAF 0.5.8, `block` e `base64` nello stesso giro (report `block-2310` e `base64-2310`).
-
-Il CRS decodifica il Base64 solo in tre regole sulle iniezioni Node.js (934100 e vicine): per tutte le altre famiglie un attacco in Base64 resta invisibile. Il profilo `base64` (`make base64`) è il livello 1 più cinque regole in [`demo/tuning/base64/dopo/10-base64.conf`](../demo/tuning/base64/dopo/10-base64.conf): decodificano solo i valori che hanno la forma del Base64 (almeno 12 caratteri dell'alfabeto, niente spazi) e ci cercano SQL injection e XSS con gli stessi rilevatori del CRS, più le forme più comuni di percorsi di sistema, codice PHP, Log4Shell, comandi di shell, LDAP, NoSQL, template, SSI e comandi di posta. Una regola fa lo stesso sui pezzi del percorso.
-
-| | block | base64 |
-|---|---|---|
-| Varianti Base64 fermate | 0/230 (0%) | **123/231 (53%)** |
-| Tutti gli attacchi | 327/665 (49%) | **450/668 (67%)** |
-| Senza le varianti Base64 | 327/435 (75%) | 327/437 (75%) |
-| Legittime bloccate per errore | 13/141 | 13/139 |
-
-- Le richieste legittime bloccate non cambiano: su questo set le regole non costano falsi allarmi. Le legittime di GoTestWAF non contengono Base64, quindi è una misura debole: su un servizio che riceve token o dati codificati va rifatta col proprio traffico.
-- Restano fuori le varianti negli header e buona parte di quelle nel JSON, e tutto quello che le espressioni qui sopra non descrivono. Sono regole scritte a mano: coprono le forme note, non il resto.
-- Perché il CRS non lo fa di suo, per quanto si vede dalle regole: decodificare ogni valore costa a ogni richiesta, e il testo normale decodificato diventa byte a caso, che possono accendere regole a caso. Le regole qui sopra limitano il costo ai soli valori con la forma del Base64.
-
 ### PHP2Shell: la forma della richiesta
 
 Misurato il 2026-10-23 con `make <profilo> && make php2shell`. [`scripts/php2shell.sh`](../scripts/php2shell.sh) manda al servizio PHP della demo (immagine `php:8.4.27-apache`, già corretta) richieste innocue con la forma descritta negli avvisi pubblici di [CVE-2026-109618 e CVE-2026-109619](https://www.php.net/archive/2026.php#2026-10-20-1). Nessun exploit: si misura cosa riconosce il WAF, non se l'attacco riuscirebbe.

@@ -7,7 +7,7 @@ set -u
 cd "$(dirname "$0")/.."
 docker run --rm -v nuclei-templates:/root/nuclei-templates projectdiscovery/nuclei:v3.11.1 -ut -silent >/dev/null 2>&1
 DC="docker compose -f demo/docker-compose.yml -f misure/compose.yml"
-ALL="--profile nowaf --profile block --profile detect --profile paranoid --profile tuned --profile toppa --profile base64 --profile guarda --profile sumisura"
+ALL="--profile nowaf --profile block --profile detect --profile paranoid --profile tuned --profile toppa --profile guarda --profile sumisura"
 mkdir -p misure/risultati/nuclei
 for p in ${PROFILI:-nowaf block}; do
   for t in sqli xss lfi rce; do

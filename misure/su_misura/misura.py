@@ -28,7 +28,7 @@ import urllib.request
 RADICE = pathlib.Path(__file__).resolve().parents[2]
 QUI = pathlib.Path(__file__).resolve().parent
 DC = ["docker", "compose", "-f", "demo/docker-compose.yml", "-f", "misure/compose.yml"]
-PROFILI = ["nowaf", "detect", "block", "paranoid", "tuned", "toppa", "base64", "guarda", "sumisura"]
+PROFILI = ["nowaf", "detect", "block", "paranoid", "tuned", "toppa", "guarda", "sumisura"]
 URL = "http://localhost:8080/search?q="
 
 

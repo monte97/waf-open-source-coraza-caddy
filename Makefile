@@ -1,4 +1,4 @@
-.PHONY: help falsi-allarmi su-misura nowaf detect block paranoid tuned toppa base64 down logs logs-waf attack falso-positivo status clean caddyfile-diff verifica cattura misure raffica php2shell
+.PHONY: help falsi-allarmi su-misura nowaf detect block paranoid tuned toppa down logs logs-waf attack falso-positivo status clean caddyfile-diff verifica cattura misure raffica php2shell
 
 COMPOSE := cd demo && docker compose
 URL     := http://localhost:8080
@@ -7,7 +7,7 @@ URL     := http://localhost:8080
 # attivo in quel momento, e la porta 8080 resta occupata dal profilo
 # precedente. Vanno nominati tutti. Misurato, non dedotto: senza questa riga
 # il secondo `make <profilo>` fallisce con "port is already allocated".
-TUTTI := --profile nowaf --profile detect --profile block --profile paranoid --profile tuned --profile toppa --profile base64
+TUTTI := --profile nowaf --profile detect --profile block --profile paranoid --profile tuned --profile toppa
 
 # Cosa fa ogni profilo, in una riga: la stampa `make <profilo>` mentre lo accende.
 DESCR_nowaf    := solo Caddy, reverse proxy senza WAF: passa tutto
@@ -16,7 +16,6 @@ DESCR_block    := Caddy + Coraza + regole OWASP CRS, livello 1: blocca
 DESCR_paranoid := Caddy + Coraza + regole OWASP CRS, livello 3: piu' severo
 DESCR_tuned    := livello 3 con le correzioni di tuning/tuned
 DESCR_toppa    := livello 1 con le regole per PHP2Shell di tuning/toppa
-DESCR_base64   := livello 1 che guarda anche dentro i valori in Base64
 
 # Ogni profilo fa `down` prima di salire: le cinque varianti di Caddy
 # pubblicano la stessa porta, quindi ne puo' vivere una per volta.
@@ -50,8 +49,7 @@ help:
 	                                        "make block"    "WAF livello 1: blocca (il default di make)" \
 	                                        "make paranoid" "WAF livello 3: piu' severo, blocca anche qualche richiesta onesta" \
 	                                        "make tuned"    "livello 3 con le correzioni di tuning/tuned" \
-	                                        "make toppa"    "livello 1 con le regole per PHP2Shell" \
-	                                        "make base64"   "livello 1 che guarda anche dentro i valori in Base64"
+	                                        "make toppa"    "livello 1 con le regole per PHP2Shell"
 	@printf "\n\033[1;96mSul palco\033[0m (dopo aver acceso un profilo)\n"
 	@printf "  \033[1;97m%-20s\033[0m %s\n" "make raffica"        "dodici richieste in tabella: quattro oneste, otto attacchi" \
 	                                        "make falsi-allarmi"  "perche' le oneste sono state bloccate, e le righe di esclusione" \
@@ -153,9 +151,6 @@ clean:
 toppa:
 	$(call avvia,toppa)
 
-## Livello 1 che guarda anche dentro il Base64 (tuning/base64)
-base64:
-	$(call avvia,base64)
 
 ## Paranoia alzata: copre di piu' e comincia a bloccare traffico onesto
 paranoid:

@@ -63,7 +63,6 @@ Ogni profilo è un momento del talk. Ne gira uno per volta: tutti pubblicano la 
 | `make paranoid` | Paranoia 3: copre di più e blocca traffico onesto | 200 | 403 | 403 |
 | `make tuned` | Paranoia 3 con il falso positivo escluso | 200 | 403 | 200 |
 | `make toppa` | Paranoia 1 più due regole su misura per PHP2Shell | 200 | 403 | 200 |
-| `make base64` | Paranoia 1 che guarda anche dentro i valori in Base64 | 200 | 403 | 200 |
 
 Poi:
 

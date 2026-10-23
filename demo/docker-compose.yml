@@ -110,19 +110,6 @@ services:
       - ./tuning/tuned/prima:/opt/coraza/config.d:ro
       - ./tuning/tuned/dopo:/opt/coraza/rules.d:ro
 
-  # ── WAF che blocca, e guarda anche dentro il Base64 ───────────────────────
-  # Livello 1 come `block`, piu' tre regole in tuning/base64/dopo.
-  caddy-base64:
-    <<: *caddy
-    profiles: ["base64"]
-    environment:
-      CORAZA_RULE_ENGINE: On
-      MANUAL_MODE: "1"
-    volumes:
-      - ./caddy/waf.Caddyfile:/config/caddy/Caddyfile:ro
-      - ./tuning/default/prima:/opt/coraza/config.d:ro
-      - ./tuning/base64/dopo:/opt/coraza/rules.d:ro
-
   # ── WAF che blocca, con la toppa per PHP2Shell ───────────────────────────
   # Livello 1 come `block`, piu' due regole su misura in tuning/toppa/dopo.
   caddy-toppa:
