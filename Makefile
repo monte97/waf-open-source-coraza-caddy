@@ -1,4 +1,4 @@
-.PHONY: help info regole regola falsi-allarmi su-misura nowaf detect block paranoid tuned toppa down logs logs-waf attack falso-positivo status clean caddyfile-diff verifica cattura misure raffica php2shell
+.PHONY: help info regola falsi-allarmi su-misura nowaf detect block paranoid tuned toppa down logs logs-waf attack falso-positivo status clean caddyfile-diff verifica cattura misure raffica php2shell
 
 COMPOSE := cd demo && docker compose
 URL     := http://localhost:8080
@@ -57,8 +57,7 @@ help:
 	                                        "make falso-positivo" "la ricerca onesta \"C++ & C# -- guida\"" \
 	                                        "make php2shell"      "la forma di PHP2Shell contro il servizio PHP"
 	@printf "\n\033[1;96mCosa sta girando\033[0m\n"
-	@printf "  \033[1;97m%-22s\033[0m %s\n" "make info"   "cosa sta girando: WAF si' o no, versioni, modalita', livello, soglie, correzioni" \
-	                                        "make regole" "quante regole del CRS sono accese, per famiglia e per livello" \
+	@printf "  \033[1;97m%-22s\033[0m %s\n" "make info"   "come e' messo: WAF si' o no, versioni, modalita', livello, soglie, correzioni, regole" \
 	                                        "make regola ID=942440" "la scheda di una regola: cosa segnala, punti, livello, dove guarda"
 	@printf "\n\033[1;96mControlli\033[0m\n"
 	@printf "  \033[1;97m%-22s\033[0m %s\n" "make verifica" "accende i profili in fila e controlla che facciano cosa promettono" \
@@ -120,13 +119,9 @@ falso-positivo:
 	@echo "=== ricerca legittima: un libro su C++ e C# ==="
 	@curl -s -o /dev/null -w "  HTTP %{http_code}\n" --get --data-urlencode "q=C++ & C# -- guida" "$(URL)/search"
 
-## Il WAF acceso: immagine, versioni, modalita', soglie, correzioni caricate
+## Tutto sul WAF acceso: versioni, modalita', livello, soglie, correzioni, regole del CRS
 info:
 	@/usr/bin/python3 scripts/coraza.py info
-
-## Le regole del CRS: quante per famiglia e per livello di paranoia
-regole:
-	@/usr/bin/python3 scripts/coraza.py regole
 
 ## La scheda di una regola: make regola ID=942440
 regola:

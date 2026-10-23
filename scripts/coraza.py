@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Informazioni sul WAF acceso, lette dal container di Caddy + Coraza.
 
-  make info                 cosa gira: immagine, versioni, modalita', soglie, correzioni caricate
-  make regole               le regole del CRS: quante per famiglia e per livello di paranoia
+  make info                 tutto sul WAF acceso: immagine, versioni, modalita', livello, soglie,
+                            correzioni caricate, regole del CRS (in tutto, per livello, per famiglia)
   make regola ID=942440     la scheda di una regola: cosa cerca, gravita', livello, file
 """
 import json, re, subprocess, sys, os
@@ -84,10 +84,10 @@ def info():
             print(f"  {TENUE}{quando:<22}{FINE} {BIANCO}{os.path.basename(f)}{FINE}  {stato}")
             for r in attive[:6]:
                 print(f"  {'':<22} {GIALLO}{r.strip()}{FINE}")
-    print()
+    elenco(c, profilo)
 
-def elenco():
-    c, profilo = container(); e = env(c); pl = livello(c, e)
+def elenco(c, profilo):
+    e = env(c); pl = livello(c, e)
     # come nella slide: le regole sulle richieste (REQUEST-9xx) che hanno un livello di paranoia
     tutte = regole(c)
     rr = [r for r in tutte if r["file"].startswith("REQUEST") and r["pl"]]
@@ -130,7 +130,6 @@ def scheda(rid):
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "info"
     if cmd == "info": info()
-    elif cmd == "regole": elenco()
     elif cmd == "regola":
         if len(sys.argv) < 3 or not sys.argv[2].isdigit():
             print(f"{ROSSO}uso: make regola ID=942440{FINE}"); sys.exit(1)
