@@ -185,3 +185,24 @@ Misurato il 2026-10-23 con `make <profilo> && make php2shell`. [`scripts/php2she
 - **GoTestWAF viene da Wallarm, che vende un WAF.** Il set è costruito per mettere in difficoltà i WAF e le richieste legittime sono volutamente ambigue: il 9% sovrastima i falsi positivi di un servizio reale.
 - **Misura in laboratorio, un giro per profilo.** Nessuna ripetizione, nessun intervallo di confidenza. Fra due giri GoTestWAF si sposta di qualche unità.
 - **Il backend da misura deve reggere il carico.** La prima versione serviva una richiesta alla volta e a 200 richieste al secondo ne perdeva: i conteggi di Nuclei oscillavano fra 6.000 e 18.000. Con `ThreadingHTTPServer` e `-nmhe` (Nuclei non abbandona il bersaglio dopo 30 errori) due giri consecutivi sono rimasti entro l'1%.
+
+### Prestazioni
+
+Misurato il 2026-10-23 su un Apple M5, immagine della demo: 500 richieste in fila a `/search?q=tastiera+meccanica` dopo 30 di riscaldamento, e la memoria del container di Caddy con `docker stats`.
+
+| Profilo | Latenza mediana | p95 | Memoria del container |
+|---|---|---|---|
+| nowaf | 0,91 ms | 1,13 ms | 19 MB |
+| block (livello 1) | 1,77 ms | 2,46 ms | 77 MB |
+| paranoid (livello 3) | 2,08 ms | 2,75 ms | 76 MB |
+
+- Il WAF aggiunge circa 1 ms a richiesta e 60 MB di memoria. È una richiesta piccola e senza corpo: con corpi grandi o tanti campi il costo cresce.
+- Su un Raspberry Pi i numeri sono più alti: non misurato.
+
+### La versione da leggere, provata
+
+[`esempio/`](../esempio/) non usa i profili della demo: il livello viene da `BLOCKING_PARANOIA` e le correzioni da `tuning/`. Provato il 2026-10-23 con lo stesso Caddyfile (un sito solo che risponde «ok»): con `BLOCKING_PARANOIA: 1` la SQL injection è 403 e «C++ & C# -- guida» passa; con `3` sono 403 tutte e due; con `3` e le due righe di esclusione in `tuning/` la ricerca torna a passare e la SQL injection resta 403.
+
+### I punti, esempi misurati
+
+Al livello 3 (`make paranoid`), dal registro: «tastiera meccanica» 0 punti; «C++ & C#» 3 punti (942460, warning), passa; «C++ & C# -- guida» 8 punti (942440 + 942460), bloccata; «1' OR 1=1--» 25 punti (cinque regole critiche), bloccata. Al livello 1 la stessa SQL injection fa scattare solo 942100 (5 punti), e la UNION della raffica quattro regole da 5.
