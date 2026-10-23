@@ -1,4 +1,4 @@
-.PHONY: help info regola falsi-allarmi su-misura nowaf detect block paranoid tuned toppa down logs logs-waf attack falso-positivo status clean caddyfile-diff verifica cattura misure raffica php2shell
+.PHONY: help info regola registro falsi-allarmi su-misura nowaf detect block paranoid tuned toppa down clean verifica misure raffica php2shell
 
 COMPOSE := cd demo && docker compose
 URL     := http://localhost:8080
@@ -33,7 +33,7 @@ define avvia
 	 for i in $$(seq 1 60); do \
 	   [ "$$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 '$(URL)/search?q=tastiera')" = 200 ] && { printf " \033[1;92mpronto\033[0m\n"; exit 0; }; \
 	   printf "."; sleep 0.5; \
-	 done; printf " \033[1;91mnon risponde dopo 30 secondi: guarda make logs\033[0m\n"; exit 1
+	 done; printf " \033[1;91mnon risponde dopo 30 secondi: guarda cd demo && docker compose logs\033[0m\n"; exit 1
 	@echo ""
 endef
 
@@ -44,33 +44,27 @@ all: block
 ## I comandi a disposizione, divisi per uso
 help:
 	@printf "\n\033[1;96mI profili\033[0m (uno acceso per volta, sulla porta 8080)\n"
-	@printf "  \033[1;97m%-22s\033[0m %s\n" "make nowaf"    "solo Caddy, senza WAF: passa tutto" \
-	                                        "make detect"   "WAF in DetectionOnly: guarda e scrive nel log, non blocca" \
-	                                        "make block"    "WAF livello 1: blocca (il default di make)" \
-	                                        "make paranoid" "WAF livello 3: piu' severo, blocca anche qualche richiesta onesta" \
-	                                        "make tuned"    "livello 3 con le correzioni di tuning/tuned" \
-	                                        "make toppa"    "livello 1 con le regole per PHP2Shell"
+	@printf "  \033[1;97m%-22s\033[0m %s\n" "make nowaf" "solo Caddy, senza WAF: passa tutto" \
+	       "make detect" "WAF in DetectionOnly: guarda e scrive nel registro, non blocca" \
+	       "make block" "WAF livello 1: blocca (il default di make)" \
+	       "make paranoid" "WAF livello 3: piu' severo, blocca anche qualche richiesta onesta" \
+	       "make tuned" "livello 3 con le correzioni di tuning/tuned" \
+	       "make toppa" "livello 1 con le regole per PHP2Shell"
 	@printf "\n\033[1;96mSul palco\033[0m (dopo aver acceso un profilo)\n"
-	@printf "  \033[1;97m%-22s\033[0m %s\n" "make raffica"        "dodici richieste in tabella: quattro oneste, otto attacchi" \
-	                                        "make falsi-allarmi"  "perche' le oneste sono state bloccate, e le righe di esclusione" \
-	                                        "make attack"         "tre richieste: pulita, SQL injection, XSS" \
-	                                        "make falso-positivo" "la ricerca onesta \"C++ & C# -- guida\"" \
-	                                        "make php2shell"      "la forma di PHP2Shell contro il servizio PHP"
+	@printf "  \033[1;97m%-22s\033[0m %s\n" "make raffica" "dodici richieste in tabella: quattro oneste, otto attacchi" \
+	       "make falsi-allarmi" "perche' le oneste sono state bloccate, e le righe di esclusione" \
+	       "make php2shell" "la forma di PHP2Shell contro il servizio PHP"
 	@printf "\n\033[1;96mCosa sta girando\033[0m\n"
-	@printf "  \033[1;97m%-22s\033[0m %s\n" "make info"   "come e' messo: WAF si' o no, versioni, modalita', livello, soglie, correzioni, regole" \
-	                                        "make regola ID=942440" "la scheda di una regola: cosa segnala, punti, livello, dove guarda"
+	@printf "  \033[1;97m%-22s\033[0m %s\n" "make info" "come e' messo: WAF si' o no, versioni, modalita', livello, soglie, correzioni, regole" \
+	       "make registro" "le ultime 20 richieste, con esito e regole scattate (N=50 per vederne di piu)" \
+	       "make regola ID=942440" "la scheda di una regola: cosa segnala, punti, livello, dove guarda"
 	@printf "\n\033[1;96mControlli\033[0m\n"
 	@printf "  \033[1;97m%-22s\033[0m %s\n" "make verifica" "accende i profili in fila e controlla che facciano cosa promettono" \
-	                                        "make status"   "i container accesi" \
-	                                        "make logs"     "il registro di tutti i container, in diretta" \
-	                                        "make logs-waf" "solo le righe del WAF, in diretta (Ctrl+C per uscire)" \
-	                                        "make down"     "spegne tutto" \
-	                                        "make clean"    "spegne tutto e cancella i volumi"
-	@printf "\n\033[1;96mMisure e materiale\033[0m (lenti)\n"
-	@printf "  \033[1;97m%-22s\033[0m %s\n" "make su-misura"      "il WAF su misura: guarda, escludi, misura (circa un minuto)" \
-	                                        "make misure"         "GoTestWAF e Nuclei contro i profili (circa venti minuti)" \
-	                                        "make cattura"        "rigenera il materiale delle slide" \
-	                                        "make caddyfile-diff" "il diff fra i Caddyfile dei profili"
+	       "make down" "spegne tutto" \
+	       "make clean" "spegne tutto e cancella i volumi"
+	@printf "\n\033[1;96mMisure\033[0m (lente)\n"
+	@printf "  \033[1;97m%-22s\033[0m %s\n" "make su-misura" "il WAF su misura: guarda, escludi, misura (circa un minuto)" \
+	       "make misure" "GoTestWAF e Nuclei contro i profili (circa venti minuti)"
 	@printf "\n"
 
 # ── i cinque stati del racconto ────────────────────────────────────────────────────────────────────────────────────────
@@ -93,15 +87,6 @@ tuned:
 
 # ── strumenti da palco ──────────────────────────────────────────────────────
 
-## Le tre richieste della demo: pulita, SQL injection, XSS
-attack:
-	@echo "=== richiesta pulita ==="
-	@curl -s -o /dev/null -w "  HTTP %{http_code}\n" "$(URL)/search?q=tastiera"
-	@echo "=== SQL injection ==="
-	@curl -s -o /dev/null -w "  HTTP %{http_code}\n" "$(URL)/search?q=1'%20OR%201=1--"
-	@echo "=== XSS ==="
-	@curl -s -o /dev/null -w "  HTTP %{http_code}\n" "$(URL)/search?q=%3Cscript%3Ealert(1)%3C/script%3E"
-
 ## Dodici richieste in un secondo, una riga ciascuna: quattro oneste, otto
 ## attacchi classici. Da lanciare dopo ogni profilo, anche dal vivo
 raffica:
@@ -112,16 +97,13 @@ raffica:
 php2shell:
 	@bash scripts/php2shell.sh
 
-## La ricerca legittima che il WAF scambia per un attacco (slide 10)
-## Misurata: passa a paranoia 1, viene bloccata a paranoia 3, torna a passare
-## dopo l'esclusione del profilo `tuned`.
-falso-positivo:
-	@echo "=== ricerca legittima: un libro su C++ e C# ==="
-	@curl -s -o /dev/null -w "  HTTP %{http_code}\n" --get --data-urlencode "q=C++ & C# -- guida" "$(URL)/search"
-
 ## Tutto sul WAF acceso: versioni, modalita', livello, soglie, correzioni, regole del CRS
 info:
 	@/usr/bin/python3 scripts/coraza.py info
+
+## Il registro di Caddy, leggibile: le ultime richieste, con esito e regole scattate
+registro:
+	@/usr/bin/python3 scripts/registro.py $(N)
 
 ## La scheda di una regola: make regola ID=942440
 regola:
@@ -137,22 +119,8 @@ falsi-allarmi:
 verifica:
 	@bash scripts/verifica.sh
 
-## Il diff che spiega il talk in dieci righe
-caddyfile-diff:
-	@diff -u demo/caddy/nowaf.Caddyfile demo/caddy/waf.Caddyfile || true
-
 down:
 	@$(COMPOSE) $(TUTTI) down --remove-orphans
-
-logs:
-	$(COMPOSE) logs -f
-
-## Solo il WAF: qui compaiono i rule ID
-logs-waf:
-	$(COMPOSE) logs -f | grep -i coraza
-
-status:
-	@$(COMPOSE) ps
 
 clean:
 	@$(COMPOSE) $(TUTTI) down -v --remove-orphans
@@ -166,10 +134,6 @@ toppa:
 ## Paranoia alzata: copre di piu' e comincia a bloccare traffico onesto
 paranoid:
 	$(call avvia,paranoid)
-
-## Rigenera il materiale delle slide: input e output di ogni momento
-cattura:
-	@python3 scripts/cattura.py
 
 ## Il WAF su misura: guarda, escludi, misura (misure/su_misura). Circa un minuto
 su-misura:

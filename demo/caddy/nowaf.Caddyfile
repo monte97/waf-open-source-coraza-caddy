@@ -6,6 +6,9 @@
 # Il diff con waf.Caddyfile e' tutto il talk.
 
 :80 {
+	# Una riga per ogni richiesta nel registro di Caddy: la legge `make registro`.
+	log
+
 	# Il servizio PHP della prova su PHP2Shell (make php2shell).
 	reverse_proxy /php/* php:80
 	reverse_proxy app:8000

@@ -12,6 +12,9 @@
 }
 
 :80 {
+	# Una riga per ogni richiesta nel registro di Caddy: la legge `make registro`.
+	log
+
 	# Fra i backtick c'e' configurazione SecLang, la lingua delle regole di
 	# ModSecurity e del CRS. Caddy la passa a Coraza cosi' com'e'.
 	coraza_waf {

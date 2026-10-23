@@ -67,13 +67,11 @@ Ogni profilo è un momento del talk. Ne gira uno per volta: tutti pubblicano la 
 Poi:
 
 ```bash
-make attack           # richiesta pulita, SQL injection, XSS
-make falso-positivo   # la ricerca legittima che a paranoia 3 viene bloccata
 make raffica          # dodici richieste in un secondo, in tabella: quattro oneste, otto attacchi
 make falsi-allarmi    # dopo make paranoid && make raffica: perché le oneste sono state bloccate, e le righe di esclusione
 make info             # come è messo: WAF sì o no, versioni, modalità, livello, soglie, correzioni, regole del CRS
+make registro         # le ultime 20 richieste (N=50 per di più), con esito e regole scattate
 make regola ID=942440 # la scheda di una regola: cosa segnala, punti, livello, dove guarda
-make logs-waf         # le regole scattate, con il loro ID
 make php2shell        # la forma di PHP2Shell contro il servizio PHP
 ```
 
@@ -93,11 +91,8 @@ make toppa && make php2shell    # con due regole su misura: due richieste su tre
 | Comando | Descrizione |
 |---------|-------------|
 | `make verifica` | Pre-volo: accende i cinque profili in fila e stampa la matrice qui sopra. Da lanciare la sera prima |
-| `make cattura` | Rigenera `talk/cattura/`: per ogni profilo il comando e l'output reale, pronti per le slide |
+| `make help` | Tutti i comandi, divisi per uso |
 | `make misure` | Lancia GoTestWAF e Nuclei contro i profili. Numeri e metodo in [`misure/README.md`](misure/README.md) |
-| `make caddyfile-diff` | Il diff fra Caddyfile senza e con WAF |
-| `make logs` | Log di tutti i servizi |
-| `make status` | Stato dei container |
 | `make down` | Spegne qualunque profilo sia attivo |
 | `make clean` | Spegne tutto e rimuove i volumi |
 
@@ -113,7 +108,7 @@ I due Caddyfile in `demo/caddy/` sono montati davvero: quello che si vede a sche
   SecRuleUpdateTargetById 942440 "!ARGS:q"
   SecRuleUpdateTargetById 942460 "!ARGS:q"
   ```
-  Gli ID si leggono nel log del profilo `paranoid` (`make logs-waf`) quando la richiesta legittima viene fermata. Un'esclusione mirata su un parametro toglie meno copertura di un `SecRuleRemoveById`, che spegne la regola ovunque.
+  Gli ID si leggono nel log del profilo `paranoid` (`make falsi-allarmi`, o `make registro`) quando la richiesta legittima viene fermata. Un'esclusione mirata su un parametro toglie meno copertura di un `SecRuleRemoveById`, che spegne la regola ovunque.
 
 ### Aggiungere un servizio da proteggere
 
@@ -149,17 +144,17 @@ example.com {
 │   ├── verifica.sh               # make verifica
 │   ├── raffica.sh                # make raffica
 │   ├── php2shell.sh              # make php2shell
-│   └── cattura.py                # make cattura
+│   ├── falsi_allarmi.py          # make falsi-allarmi
+│   ├── coraza.py                 # make info, make regola
+│   └── registro.py               # make registro
 ├── misure/                       # make misure: GoTestWAF e Nuclei contro i profili
 ├── slides/                       # il PDF delle slide
 ├── FONTI.md                      # le fonti citate nel talk, con i link
-├── talk/
-│   └── cattura/                  # input e output reali di ogni profilo
 └── Makefile
 ```
 
 ## License
 
 - Demo code: MIT
-- Talk content (slides/, talk/): CC BY-SA 4.0
+- Talk content (slides/): CC BY-SA 4.0
 - OWASP CRS: Apache 2.0
