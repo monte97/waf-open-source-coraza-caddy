@@ -51,6 +51,8 @@ L'applicazione (`demo/app/app.py`) è volutamente ingenua: prende la query strin
 
 ## I profili
 
+`make help` elenca tutti i comandi, divisi per uso.
+
 Ogni profilo è un momento del talk. Ne gira uno per volta: tutti pubblicano la 8080, e ogni `make <profilo>` spegne il precedente prima di salire.
 
 | Comando | Cosa succede | Pulita | SQL injection | Ricerca "C++ & C# -- guida" |
