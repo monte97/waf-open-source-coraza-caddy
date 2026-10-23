@@ -56,7 +56,7 @@ help:
 	       "make php2shell" "la forma di PHP2Shell contro il servizio PHP"
 	@printf "\n\033[1;96mCosa sta girando\033[0m\n"
 	@printf "  \033[1;97m%-22s\033[0m %s\n" "make info" "come e' messo: WAF si' o no, versioni, modalita', livello, soglie, correzioni, regole" \
-	       "make registro" "le ultime 20 richieste, con esito e regole scattate (N=50 per vederne di piu)" \
+	       "make registro" "le ultime 20 richieste: esito, regole scattate, falso positivo o no (N=50 per di piu)" \
 	       "make regola ID=942440" "la scheda di una regola: cosa segnala, punti, livello, dove guarda"
 	@printf "\n\033[1;96mControlli\033[0m\n"
 	@printf "  \033[1;97m%-22s\033[0m %s\n" "make verifica" "accende i profili in fila e controlla che facciano cosa promettono" \

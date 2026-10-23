@@ -70,7 +70,7 @@ Poi:
 make raffica          # dodici richieste in un secondo, in tabella: quattro oneste, otto attacchi
 make falsi-allarmi    # dopo make paranoid && make raffica: perché le oneste sono state bloccate, e le righe di esclusione
 make info             # come è messo: WAF sì o no, versioni, modalità, livello, soglie, correzioni, regole del CRS
-make registro         # le ultime 20 richieste (N=50 per di più), con esito e regole scattate
+make registro         # le ultime 20 richieste (N=50 per di più): esito, regole scattate, falso positivo o no
 make regola ID=942440 # la scheda di una regola: cosa segnala, punti, livello, dove guarda
 make php2shell        # la forma di PHP2Shell contro il servizio PHP
 ```
