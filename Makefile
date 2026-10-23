@@ -56,8 +56,8 @@ help:
 	                                        "make attack"         "tre richieste: pulita, SQL injection, XSS" \
 	                                        "make falso-positivo" "la ricerca onesta \"C++ & C# -- guida\"" \
 	                                        "make php2shell"      "la forma di PHP2Shell contro il servizio PHP"
-	@printf "\n\033[1;96mIl WAF acceso\033[0m\n"
-	@printf "  \033[1;97m%-22s\033[0m %s\n" "make info"   "immagine, versioni, modalita', livello, soglie, correzioni caricate" \
+	@printf "\n\033[1;96mCosa sta girando\033[0m\n"
+	@printf "  \033[1;97m%-22s\033[0m %s\n" "make info"   "cosa sta girando: WAF si' o no, versioni, modalita', livello, soglie, correzioni" \
 	                                        "make regole" "quante regole del CRS sono accese, per famiglia e per livello" \
 	                                        "make regola ID=942440" "la scheda di una regola: cosa segnala, punti, livello, dove guarda"
 	@printf "\n\033[1;96mControlli\033[0m\n"

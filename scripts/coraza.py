@@ -59,7 +59,10 @@ def info():
     caddy = sh("docker", "exec", c, "caddy", "version").split()[0]
     crs = (re.search(r"ver:'OWASP_CRS/([\d.]+)'", sh("docker", "exec", c, "grep", "-m1", "ver:'OWASP_CRS/",
            "/opt/coraza/owasp-crs/rules/REQUEST-942-APPLICATION-ATTACK-SQLI.conf")) or [None, "?"])[1]
-    print(f"\n{AZZURRO}» il WAF acceso{FINE}\n")
+    if profilo == "nowaf":
+        print(f"\n{AZZURRO}» cosa sta girando: {ROSSO}nessun WAF{FINE}\n")
+    else:
+        print(f"\n{AZZURRO}» cosa sta girando: {VERDE}WAF acceso{FINE}\n")
     righe = [("profilo", profilo), ("immagine", immagine), ("Caddy", caddy), ("regole OWASP CRS", crs),
              ("modalità", {"On": "On: blocca", "DetectionOnly": "DetectionOnly: guarda e annota, non blocca",
                            "Off": "Off: spento"}.get(e.get("CORAZA_RULE_ENGINE"), e.get("CORAZA_RULE_ENGINE", "?"))),
@@ -68,7 +71,7 @@ def info():
              ("soglia in uscita", e.get("ANOMALY_OUTBOUND", "?") + " punti"),
              ("corpo massimo", f"{int(e.get('CORAZA_REQ_BODY_LIMIT', '0')) // 1048576} MB")]
     if profilo == "nowaf":
-        righe = righe[:3] + [("WAF", "nessuno: questo profilo e' solo reverse proxy")]
+        righe = righe[:3] + [("WAF", "nessuno: Caddy fa solo da reverse proxy, le richieste arrivano all'app senza controlli")]
     for k, v in righe:
         print(f"  {TENUE}{k:<22}{FINE} {BIANCO}{v}{FINE}")
     if profilo == "nowaf":
