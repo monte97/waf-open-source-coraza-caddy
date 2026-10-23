@@ -1,0 +1,36 @@
+# Un WAF davanti ai servizi di casa: la versione da leggere.
+#
+# E' la stessa configurazione della demo, senza i profili: un Caddy con il WAF
+# acceso al livello 1, e dietro tre servizi. Nessun servizio apre porte verso
+# fuori tranne Caddy. Le immagini dei servizi sono quelle ufficiali; le loro
+# configurazioni (database, volumi dei dati) sono omesse per restare leggibili.
+
+services:
+
+  # Il reverse proxy con il WAF: Caddy + Coraza + le regole OWASP CRS,
+  # gia' tutto dentro l'immagine del team CRS.
+  caddy:
+    image: ghcr.io/coreruleset/coraza-crs:4.30.0-caddy-alpine-202610110510
+    ports:
+      - "80:80"      # per ottenere i certificati HTTPS
+      - "443:443"    # l'unica porta dei servizi verso fuori
+    environment:
+      CORAZA_RULE_ENGINE: On   # On blocca; DetectionOnly guarda e annota; Off spento
+      BLOCKING_PARANOIA: 1     # la severita', da 1 a 4: per casa basta 1
+    volumes:
+      - ./Caddyfile:/config/caddy/Caddyfile:ro   # indirizzi, WAF, a chi consegnare
+      - ./tuning:/opt/coraza/rules.d:ro          # le vostre correzioni
+      - caddy_data:/data                         # i certificati, da non perdere
+
+  # I servizi: nessuna porta verso fuori, li raggiunge solo Caddy.
+  nextcloud:
+    image: nextcloud
+
+  gitea:
+    image: gitea/gitea
+
+  jellyfin:
+    image: jellyfin/jellyfin
+
+volumes:
+  caddy_data:

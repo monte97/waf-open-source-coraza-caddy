@@ -6,6 +6,8 @@ Slide, demo e misure del talk **"WAF open source: una difesa in più per i tuoi 
 - **Fonti citate nel talk:** [`FONTI.md`](FONTI.md)
 - **Misure:** [`misure/README.md`](misure/README.md)
 
+> Solo da leggere? [`esempio/`](esempio/) ha un `docker-compose.yml` e un `Caddyfile` semplici, senza profili: il WAF acceso al livello 1 davanti a tre servizi.
+
 ## Cos'è
 
 Uno stack WAF (Web Application Firewall) completamente open source davanti a un servizio self-hosted. Ferma SQL injection, XSS e le altre famiglie di attacco coperte dall'OWASP Core Rule Set.
@@ -130,6 +132,7 @@ example.com {
 ## Struttura del repo
 
 ```
+├── esempio/                      # la versione da leggere: un compose e un Caddyfile, WAF al livello 1
 ├── demo/
 │   ├── docker-compose.yml        # app, servizio PHP e una variante di Caddy per profilo
 │   ├── app/app.py                # l'applicazione da proteggere, solo libreria standard

@@ -1,0 +1,32 @@
+{
+	# Dove c'e' import waf, il WAF controlla per primo.
+	order coraza_waf first
+}
+
+# Il WAF, scritto una volta sola.
+(waf) {
+	coraza_waf {
+		directives `
+			Include /opt/coraza/config/coraza.conf
+			Include /opt/coraza/config/crs-setup.conf
+			Include /opt/coraza/owasp-crs/rules/*.conf
+			Include /opt/coraza/rules.d/*.conf
+		`
+	}
+}
+
+# Un blocco per servizio: l'indirizzo, il WAF, a chi consegnare.
+cloud.example.com {
+	import waf
+	reverse_proxy nextcloud:80
+}
+
+git.example.com {
+	import waf
+	reverse_proxy gitea:3000
+}
+
+media.example.com {
+	import waf
+	reverse_proxy jellyfin:8096
+}
