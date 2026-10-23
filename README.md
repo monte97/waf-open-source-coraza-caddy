@@ -71,6 +71,9 @@ make attack           # richiesta pulita, SQL injection, XSS
 make falso-positivo   # la ricerca legittima che a paranoia 3 viene bloccata
 make raffica          # dodici richieste in un secondo, in tabella: quattro oneste, otto attacchi
 make falsi-allarmi    # dopo make paranoid && make raffica: perché le oneste sono state bloccate, e le righe di esclusione
+make info             # il WAF acceso: immagine, versioni, modalità, livello, soglie, correzioni caricate
+make regole           # quante regole del CRS sono accese, per famiglia e per livello
+make regola ID=942440 # la scheda di una regola: cosa segnala, punti, livello, dove guarda
 make logs-waf         # le regole scattate, con il loro ID
 make php2shell        # la forma di PHP2Shell contro il servizio PHP
 ```

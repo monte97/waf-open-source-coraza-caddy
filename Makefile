@@ -1,4 +1,4 @@
-.PHONY: help falsi-allarmi su-misura nowaf detect block paranoid tuned toppa down logs logs-waf attack falso-positivo status clean caddyfile-diff verifica cattura misure raffica php2shell
+.PHONY: help info regole regola falsi-allarmi su-misura nowaf detect block paranoid tuned toppa down logs logs-waf attack falso-positivo status clean caddyfile-diff verifica cattura misure raffica php2shell
 
 COMPOSE := cd demo && docker compose
 URL     := http://localhost:8080
@@ -44,27 +44,31 @@ all: block
 ## I comandi a disposizione, divisi per uso
 help:
 	@printf "\n\033[1;96mI profili\033[0m (uno acceso per volta, sulla porta 8080)\n"
-	@printf "  \033[1;97m%-20s\033[0m %s\n" "make nowaf"    "solo Caddy, senza WAF: passa tutto" \
+	@printf "  \033[1;97m%-22s\033[0m %s\n" "make nowaf"    "solo Caddy, senza WAF: passa tutto" \
 	                                        "make detect"   "WAF in DetectionOnly: guarda e scrive nel log, non blocca" \
 	                                        "make block"    "WAF livello 1: blocca (il default di make)" \
 	                                        "make paranoid" "WAF livello 3: piu' severo, blocca anche qualche richiesta onesta" \
 	                                        "make tuned"    "livello 3 con le correzioni di tuning/tuned" \
 	                                        "make toppa"    "livello 1 con le regole per PHP2Shell"
 	@printf "\n\033[1;96mSul palco\033[0m (dopo aver acceso un profilo)\n"
-	@printf "  \033[1;97m%-20s\033[0m %s\n" "make raffica"        "dodici richieste in tabella: quattro oneste, otto attacchi" \
+	@printf "  \033[1;97m%-22s\033[0m %s\n" "make raffica"        "dodici richieste in tabella: quattro oneste, otto attacchi" \
 	                                        "make falsi-allarmi"  "perche' le oneste sono state bloccate, e le righe di esclusione" \
 	                                        "make attack"         "tre richieste: pulita, SQL injection, XSS" \
 	                                        "make falso-positivo" "la ricerca onesta \"C++ & C# -- guida\"" \
 	                                        "make php2shell"      "la forma di PHP2Shell contro il servizio PHP"
+	@printf "\n\033[1;96mIl WAF acceso\033[0m\n"
+	@printf "  \033[1;97m%-22s\033[0m %s\n" "make info"   "immagine, versioni, modalita', livello, soglie, correzioni caricate" \
+	                                        "make regole" "quante regole del CRS sono accese, per famiglia e per livello" \
+	                                        "make regola ID=942440" "la scheda di una regola: cosa segnala, punti, livello, dove guarda"
 	@printf "\n\033[1;96mControlli\033[0m\n"
-	@printf "  \033[1;97m%-20s\033[0m %s\n" "make verifica" "accende i profili in fila e controlla che facciano cosa promettono" \
+	@printf "  \033[1;97m%-22s\033[0m %s\n" "make verifica" "accende i profili in fila e controlla che facciano cosa promettono" \
 	                                        "make status"   "i container accesi" \
 	                                        "make logs"     "il registro di tutti i container, in diretta" \
 	                                        "make logs-waf" "solo le righe del WAF, in diretta (Ctrl+C per uscire)" \
 	                                        "make down"     "spegne tutto" \
 	                                        "make clean"    "spegne tutto e cancella i volumi"
 	@printf "\n\033[1;96mMisure e materiale\033[0m (lenti)\n"
-	@printf "  \033[1;97m%-20s\033[0m %s\n" "make su-misura"      "il WAF su misura: guarda, escludi, misura (circa un minuto)" \
+	@printf "  \033[1;97m%-22s\033[0m %s\n" "make su-misura"      "il WAF su misura: guarda, escludi, misura (circa un minuto)" \
 	                                        "make misure"         "GoTestWAF e Nuclei contro i profili (circa venti minuti)" \
 	                                        "make cattura"        "rigenera il materiale delle slide" \
 	                                        "make caddyfile-diff" "il diff fra i Caddyfile dei profili"
@@ -115,6 +119,18 @@ php2shell:
 falso-positivo:
 	@echo "=== ricerca legittima: un libro su C++ e C# ==="
 	@curl -s -o /dev/null -w "  HTTP %{http_code}\n" --get --data-urlencode "q=C++ & C# -- guida" "$(URL)/search"
+
+## Il WAF acceso: immagine, versioni, modalita', soglie, correzioni caricate
+info:
+	@/usr/bin/python3 scripts/coraza.py info
+
+## Le regole del CRS: quante per famiglia e per livello di paranoia
+regole:
+	@/usr/bin/python3 scripts/coraza.py regole
+
+## La scheda di una regola: make regola ID=942440
+regola:
+	@/usr/bin/python3 scripts/coraza.py regola $(ID)
 
 ## Perché il WAF ha bloccato le richieste oneste della raffica: regole, punti,
 ## campo, e la riga di esclusione. Dopo `make paranoid && make raffica`
