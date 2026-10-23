@@ -12,7 +12,7 @@ TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 printf 'una relazione qualunque\n' > "$TMP/relazione.txt"
 head -c 1048576 /dev/zero | tr '\0' 'a' > "$TMP/grande.txt"
 
-VERDE=$'\e[32m'; ROSSO=$'\e[31m'; GRIGIO=$'\e[90m'; FINE=$'\e[0m'
+VERDE=$'\e[32m'; ROSSO=$'\e[31m'; GRIGIO=$'\e[37m'; FINE=$'\e[0m'
 
 prova() { # tipo, descrizione, dettaglio, argomenti per curl
   local tipo=$1 descr=$2 dett=$3; shift 3

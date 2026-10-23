@@ -68,7 +68,8 @@ Poi:
 ```bash
 make attack           # richiesta pulita, SQL injection, XSS
 make falso-positivo   # la ricerca legittima che a paranoia 3 viene bloccata
-make raffica          # dodici richieste in un secondo: quattro oneste, otto attacchi
+make raffica          # dodici richieste in un secondo, in tabella: quattro oneste, otto attacchi
+make falsi-allarmi    # dopo make paranoid && make raffica: perché le oneste sono state bloccate, e le righe di esclusione
 make logs-waf         # le regole scattate, con il loro ID
 make php2shell        # la forma di PHP2Shell contro il servizio PHP
 ```

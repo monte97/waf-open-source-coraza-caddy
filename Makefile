@@ -1,4 +1,4 @@
-.PHONY: su-misura nowaf detect block paranoid tuned toppa base64 down logs logs-waf attack falso-positivo status clean caddyfile-diff verifica cattura misure raffica php2shell
+.PHONY: falsi-allarmi su-misura nowaf detect block paranoid tuned toppa base64 down logs logs-waf attack falso-positivo status clean caddyfile-diff verifica cattura misure raffica php2shell
 
 COMPOSE := cd demo && docker compose
 URL     := http://localhost:8080
@@ -9,13 +9,32 @@ URL     := http://localhost:8080
 # il secondo `make <profilo>` fallisce con "port is already allocated".
 TUTTI := --profile nowaf --profile detect --profile block --profile paranoid --profile tuned --profile toppa --profile base64
 
+# Cosa fa ogni profilo, in una riga: la stampa `make <profilo>` mentre lo accende.
+DESCR_nowaf    := solo Caddy, reverse proxy senza WAF: passa tutto
+DESCR_detect   := Caddy + Coraza + regole OWASP CRS, in DetectionOnly: guarda e scrive nel log, non blocca
+DESCR_block    := Caddy + Coraza + regole OWASP CRS, livello 1: blocca
+DESCR_paranoid := Caddy + Coraza + regole OWASP CRS, livello 3: piu' severo
+DESCR_tuned    := livello 3 con le correzioni di tuning/tuned
+DESCR_toppa    := livello 1 con le regole per PHP2Shell di tuning/toppa
+DESCR_base64   := livello 1 che guarda anche dentro i valori in Base64
+
 # Ogni profilo fa `down` prima di salire: le cinque varianti di Caddy
 # pubblicano la stessa porta, quindi ne puo' vivere una per volta.
+# L'output di Docker resta nascosto (pensato per il palco); se un comando
+# fallisce, il suo output viene stampato e make si ferma.
 define avvia
-	@$(COMPOSE) $(TUTTI) down --remove-orphans >/dev/null 2>&1 || true
-	@$(COMPOSE) --profile $(1) up -d
 	@echo ""
-	@echo ">>> profilo $(1) attivo su $(URL)"
+	@printf "\033[1;96m» spengo il profilo precedente\033[0m\n"
+	@$(COMPOSE) $(TUTTI) down --remove-orphans >/dev/null 2>&1 || true
+	@printf "\033[1;96m» accendo $(1):\033[0m \033[1;97m%s\033[0m\n" "$(DESCR_$(1))"
+	@out=$$($(COMPOSE) --profile $(1) up -d 2>&1) || { echo "$$out"; exit 1; }
+	@# aspetta che la catena risponda: subito dopo `up` Caddy non e' ancora pronto
+	@# e le prime richieste falliscono (misurato: senza attesa, dodici "bloccata" su dodici)
+	@printf "\033[1;96m» aspetto che risponda su $(URL)\033[0m "; \
+	 for i in $$(seq 1 60); do \
+	   [ "$$(curl -s -o /dev/null -w '%{http_code}' --max-time 2 '$(URL)/search?q=tastiera')" = 200 ] && { printf " \033[1;92mpronto\033[0m\n"; exit 0; }; \
+	   printf "."; sleep 0.5; \
+	 done; printf " \033[1;91mnon risponde dopo 30 secondi: guarda make logs\033[0m\n"; exit 1
 	@echo ""
 endef
 
@@ -66,6 +85,11 @@ php2shell:
 falso-positivo:
 	@echo "=== ricerca legittima: un libro su C++ e C# ==="
 	@curl -s -o /dev/null -w "  HTTP %{http_code}\n" --get --data-urlencode "q=C++ & C# -- guida" "$(URL)/search"
+
+## Perché il WAF ha bloccato le richieste oneste della raffica: regole, punti,
+## campo, e la riga di esclusione. Dopo `make paranoid && make raffica`
+falsi-allarmi:
+	@/usr/bin/python3 scripts/falsi_allarmi.py
 
 ## Pre-volo: accende i cinque profili in fila e stampa la matrice.
 ## Da lanciare la sera prima del talk. Se una cella non torna, lo scopri li'.
