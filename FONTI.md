@@ -51,6 +51,9 @@ Le misure sono mie e stanno in [`misure/README.md`](misure/README.md).
 - [PHP, GHSA-w8hw-w9fx-j79w (CVE-2026-109618)](https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w)
 - [PHP, GHSA-6wmf-4rv5-p3rp (CVE-2026-109619)](https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp)
 - [OWASP CRS, PR #4893: user agent dei PoC](https://github.com/coreruleset/coreruleset/pull/4893)
+- [AWS, mitigazioni WAF per PHP2Shell, 21/10/2026](https://aws.amazon.com/blogs/security/using-aws-waf-to-apply-mitigations-for-php2shell-rce-vulnerabilities-cve-2026-109618-and-cve-2026-109619/)
+- [PPC Land, le regole d'emergenza di Cloudflare, 21/10/2026](https://ppc.land/cloudflare-blocks-php2shell-exploits-9-hours-before-php-flaws-went-public/)
+- [P. Pillitteri, regole per nginx, Apache e ModSecurity, 21/10/2026](https://pasqualepillitteri.it/en/news/26086/php2shell-nginx-apache-rules-block-php-before-patch)
 
 ## Alternative a Caddy e a Cloudflare
 
