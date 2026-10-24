@@ -25,7 +25,8 @@ x-caddy: &caddy
   # da solo si sposta a ogni rilascio.
   image: ghcr.io/coreruleset/coraza-crs:4.30.0-caddy-alpine-202610110510
   ports:
-    - "8080:80"
+    # solo sul Mac: la demo non deve essere raggiungibile dalla rete della sala
+    - "127.0.0.1:8080:80"
   depends_on:
     - app
     - php

@@ -21,7 +21,8 @@ x-caddy: &caddy
   # La stessa immagine di demo/, con la stessa data: le misure sono confrontabili.
   image: ghcr.io/coreruleset/coraza-crs:4.30.0-caddy-alpine-202610110510
   ports:
-    - "8081:80"
+    # solo sul Mac: dietro ci sono app vere con credenziali di prova note
+    - "127.0.0.1:8081:80"
   depends_on:
     - nextcloud
     - gitea
@@ -69,7 +70,7 @@ services:
   caddy-nowaf:
     <<: *caddy
     ports:
-      - "8082:80"
+      - "127.0.0.1:8082:80"
     volumes:
       - ./caddy/nowaf.Caddyfile:/config/caddy/Caddyfile:ro
 

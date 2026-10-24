@@ -24,7 +24,7 @@ for i in $(seq 1 "$n"); do
   printf "  %-44s" "$cosa"
   for p in "${PROFILI[@]}"; do
     e=$(sed -n "${i}p" "$D/$p.csv" | cut -d';' -f3)
-    case "$e" in funziona|fermato) col=$VERDE ;; *) col=$ROSSO ;; esac
+    case "$e" in funziona|fermato) col=$VERDE ;; "all'app") col=$'\e[1;93m' ;; *) col=$ROSSO ;; esac
     printf " %s%-10s%s" "$col" "$e" "$FINE"
   done
   printf "\n"
@@ -33,4 +33,5 @@ echo ""
 for p in "${PROFILI[@]}"; do
   printf "  ${TENUE}%-10s${FINE} funzionano %s su 17 · attacchi fermati %s su 6\n" "$p" "$(head -17 "$D/$p.csv" | grep -c ';funziona$')" "$(tail -6 "$D/$p.csv" | grep -c ';fermato$')"
 done
-printf "  ${TENUE}passato = l'attacco arriva all'applicazione: se ci casca, dipende dall'applicazione${FINE}\n\n"
+printf "  ${TENUE}passato = l'attacco arriva all'applicazione: se ci casca, dipende dall'applicazione${FINE}\n"
+printf "  ${TENUE}all'app = escluso apposta nel su misura: li' l'app si difende da sola (make senza-waf)${FINE}\n\n"

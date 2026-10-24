@@ -28,9 +28,17 @@ riga() { # codice ottenuto, codici attesi (regex), cosa fa l'utente, come
   return 0
 }
 FERMATI=0; PASSATI=0
-attacco() { # codice ottenuto, cosa prova chi attacca, come
+# Il profilo acceso sulla 8081: nel su misura due attacchi passano apposta,
+# perche' le correzioni escludono proprio quei campi. Li' l'app si difende da
+# sola (make senza-waf lo mostra): non e' un buco, e' lasciato all'app.
+PROFILO=$(docker compose ps --services 2>/dev/null | grep '^caddy-' | grep -v '^caddy-nowaf$' | head -1); PROFILO=${PROFILO#caddy-}
+[ "${PORTA:-8081}" = 8082 ] && PROFILO=nowaf
+GIALLO=$'\e[1;93m'; ALLAPP=0
+attacco() { # codice ottenuto, cosa prova chi attacca, come, [escluso: coperto da una correzione del su misura]
   local esito colore
-  if [ "$1" = 403 ]; then esito=fermato; colore=$VERDE; FERMATI=$((FERMATI+1)); else esito=passato; colore=$ROSSO; PASSATI=$((PASSATI+1)); fi
+  if [ "$1" = 403 ]; then esito=fermato; colore=$VERDE; FERMATI=$((FERMATI+1))
+  elif [ "${4:-}" = escluso ] && [ "$PROFILO" = su-misura ]; then esito="all'app"; colore=$GIALLO; ALLAPP=$((ALLAPP+1))
+  else esito=passato; colore=$ROSSO; PASSATI=$((PASSATI+1)); fi
   printf "  ${TENUE}│${FINE}%s%s%s%s\n" "$colore$(cella $W1 "$esito")" "$(cella $W2 "$1")" "$BIANCO$(cella $W3 "$2")" "$(cella $W4 "$3")"
   [ -n "${CSV:-}" ] && echo "$2;$1;$esito" >> "$CSV"
 }
@@ -96,12 +104,17 @@ linea "├" "┬" "┤"
 printf '<?php system($_GET["c"]); ?>\n' > "$TMP/shell.php"
 attacco "$(curl -s -o /dev/null -w '%{http_code}' --data-urlencode "user=admin' OR 1=1--" --data-urlencode 'password=x' "$CLOUD/login")" "SQL injection nel login di Nextcloud" "POST /login, form"
 attacco "$(c "$DAV/prove-waf/..%2f..%2f..%2f..%2fetc%2fpasswd")"          "esce dalla cartella dei file"          "GET WebDAV, ../"
-attacco "$(c -T "$TMP/shell.php" "$DAV/prove-waf/shell.php")"            "carica una web shell PHP"             "PUT WebDAV"
+attacco "$(c -T "$TMP/shell.php" "$DAV/prove-waf/shell.php")"            "carica una web shell PHP"             "PUT WebDAV" escluso
 attacco "$(curl -s -o /dev/null -w '%{http_code}' --get --data-urlencode "q=' UNION SELECT passwd FROM user--" "$GIT/explore/repos")" "SQL injection nella ricerca di Gitea" "GET ?q="
 attacco "$(c -X POST -H 'Content-Type: application/json' -d '{"title":"<script>alert(1)</script>","body":"ciao"}' "$GIT/api/v1/repos/$U/prove-waf/issues")" "XSS nel titolo di una issue" "POST /api/v1, JSON"
-attacco "$(c -X POST -H 'Content-Type: application/json' -d '{"title":"ciao","body":"<script>alert(1)</script>"}' "$GIT/api/v1/repos/$U/prove-waf/issues")" "XSS nel testo di una issue" "POST /api/v1, JSON"
+attacco "$(c -X POST -H 'Content-Type: application/json' -d '{"title":"ciao","body":"<script>alert(1)</script>"}' "$GIT/api/v1/repos/$U/prove-waf/issues")" "XSS nel testo di una issue" "POST /api/v1, JSON" escluso
 linea "└" "┴" "┘"
 echo ""
-echo "${AZZURRO}» attacchi fermati ${VERDE}$FERMATI${AZZURRO}, passati ${ROSSO}$PASSATI${FINE}  ${TENUE}(passato = arrivato all'app, non vuol dire che l'app ci caschi)${FINE}"
+if [ "$ALLAPP" -gt 0 ]; then
+  echo "${AZZURRO}» attacchi fermati ${VERDE}$FERMATI${AZZURRO}, lasciati all'app ${GIALLO}$ALLAPP${AZZURRO}, passati ${ROSSO}$PASSATI${FINE}"
+  echo "  ${TENUE}lasciati all'app: esclusi apposta, li' l'app si difende da sola (make senza-waf)${FINE}"
+else
+  echo "${AZZURRO}» attacchi fermati ${VERDE}$FERMATI${AZZURRO}, passati ${ROSSO}$PASSATI${FINE}  ${TENUE}(passato = arrivato all'app, non vuol dire che l'app ci caschi)${FINE}"
+fi
 echo "${AZZURRO}» funzionano ${VERDE}$OK${AZZURRO}, rotte ${ROSSO}$ROTTE${FINE}  ${TENUE}(perché: make perche)${FINE}"
 echo ""

@@ -14,7 +14,7 @@ services:
   caddy-guarda:
     image: ghcr.io/coreruleset/coraza-crs:4.30.0-caddy-alpine-202610110510
     profiles: ["guarda"]
-    ports: ["8080:80"]
+    ports: ["127.0.0.1:8080:80"]
     depends_on: [app, php]
     networks: [waf]
     environment:
@@ -28,7 +28,7 @@ services:
   caddy-sumisura:
     image: ghcr.io/coreruleset/coraza-crs:4.30.0-caddy-alpine-202610110510
     profiles: ["sumisura"]
-    ports: ["8080:80"]
+    ports: ["127.0.0.1:8080:80"]
     depends_on: [app, php]
     networks: [waf]
     environment:

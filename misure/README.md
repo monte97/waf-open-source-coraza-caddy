@@ -153,24 +153,24 @@ Il giro è quello della documentazione CRS ([Anomaly Scoring](https://corerulese
 - I numeri differiscono da quelli della tabella GoTestWAF qui sopra perché qui non ci sono duplicati fra posizioni e tutto passa dallo stesso campo.
 - `misura.py` manda header da browser: con lo user agent di Python e senza `Accept`, al livello 3 il CRS bloccherebbe tutto per quello.
 
-### PHP2Shell: la forma della richiesta
+### PHP2Shell: gli indicatori
 
-Misurato il 2026-10-23 con `make <profilo> && make php2shell`. [`scripts/php2shell.sh`](../scripts/php2shell.sh) manda al servizio PHP della demo (immagine `php:8.4.27-apache`, già corretta) richieste innocue con la forma descritta negli avvisi pubblici di [CVE-2026-109618 e CVE-2026-109619](https://www.php.net/archive/2026.php#2026-10-20-1). Nessun exploit: si misura cosa riconosce il WAF, non se l'attacco riuscirebbe.
+Misurato il 2026-10-24 con `make <profilo> && make php2shell`. [`scripts/php2shell.sh`](../scripts/php2shell.sh) manda al servizio PHP della demo (immagine `php:8.4.27-apache`, già corretta) richieste innocue con gli indicatori che i difensori usano per riconoscere [CVE-2026-109618 e CVE-2026-109619](https://www.php.net/archive/2026.php#2026-10-20-1). Nessun exploit: si misura se il WAF riconosce gli indicatori, non se un attacco vero passerebbe o verrebbe fermato.
 
-| Richiesta | nowaf | block | paranoid | toppa |
-|---|---|---|---|---|
-| Apre la pagina | passa | passa | passa | passa |
-| Carica un file piccolo | passa | passa | passa | passa |
-| Campo `PHP_SESSION_UPLOAD_PROGRESS` (…619) | passa | passa | passa | **bloccata** |
-| Corpo multipart da 1 MiB (…618) | passa | passa | passa | passa |
-| User agent di un PoC pubblico | passa | passa | passa | **bloccata** |
+| Richiesta | Tipo | nowaf | block | paranoid | toppa |
+|---|---|---|---|---|---|
+| Apre la pagina | onesta | passa | passa | passa | passa |
+| Carica un file piccolo | onesta | passa | passa | passa | passa |
+| Campo `PHP_SESSION_UPLOAD_PROGRESS` | indicatore | passa | passa | passa | **bloccata** |
+| User agent di un PoC pubblico | indicatore | passa | passa | passa | **bloccata** |
+| Corpo multipart da 1 MiB | limite | passa | passa | passa | passa |
 
-- Il CRS 4.30, a qualunque livello, non riconosce la forma: non ha regole per queste CVE. Ha senso: la forma, da sola, è quella di un caricamento normale.
-- Il profilo `toppa` aggiunge due regole su misura in [`demo/tuning/toppa/dopo/10-php2shell.conf`](../demo/tuning/toppa/dopo/10-php2shell.conf), ispirate alle regole personalizzate che [AWS](https://aws.amazon.com/blogs/security/using-aws-waf-to-apply-mitigations-for-php2shell-rce-vulnerabilities-cve-2026-109618-and-cve-2026-109619/) propone per il proprio WAF. Il blocco degli user agent dei PoC è entrato nel CRS il 22/10 ([PR #4893](https://github.com/coreruleset/coreruleset/pull/4893)), non ancora in una versione rilasciata.
-- Il corpo grande passa anche con la toppa. Da solo non riproduce la …618, che esaurisce la memoria con richieste multipart costruite apposta (avviso GHSA-w8hw-w9fx-j79w); qui misura solo se il WAF guarda la dimensione. AWS lo ferma con un limite di 8 KB sul corpo, che però blocca anche i caricamenti veri: su un servizio con upload non si può fare.
-- Secondo [Frederik Himpe](https://blog.frehi.be/2026/10/21/php2shell-mitigating-with-crs-and-apparmor-before-the-patch/), nel canale Slack del CRS gli attacchi noti sono stati fermati da più regole del livello 1. È una fonte di seconda mano (il canale Slack non è pubblico) e qui non lo possiamo verificare, perché non usiamo exploit. Un'ipotesi, non verificata: gli exploit portano anche il codice da eseguire, e il CRS riconosce quello. Qui mandiamo solo la forma.
+- Il CRS 4.30, a qualunque livello, non ha regole per queste CVE: i due indicatori passano.
+- Il profilo `toppa` aggiunge una regola per indicatore in [`demo/tuning/toppa/dopo/10-php2shell.conf`](../demo/tuning/toppa/dopo/10-php2shell.conf). La prima, sul campo dell'avanzamento dell'upload, fa sul WAF quello che PHP suggerisce come mitigazione temporanea (spegnere `session.upload_progress`) ed è ispirata alle regole che [AWS](https://aws.amazon.com/blogs/security/using-aws-waf-to-apply-mitigations-for-php2shell-rce-vulnerabilities-cve-2026-109618-and-cve-2026-109619/) propone per il proprio WAF. La seconda blocca gli user agent dei PoC, come la regola entrata nel CRS il 22/10 ([PR #4893](https://github.com/coreruleset/coreruleset/pull/4893), che aggiunge `php2shell-` agli user agent degli scanner), non ancora in una versione rilasciata.
+- Il corpo grande è un limite, non un indicatore: il WAF non distingue un caricamento grande da un attacco. Non riproduce la …618, che esaurisce la memoria con richieste multipart costruite apposta (avviso GHSA-w8hw-w9fx-j79w). AWS lo ferma con un limite di 8 KB sul corpo, che però blocca anche i caricamenti veri.
+- Dal 21/10 esistono PoC pubblici. Qui non li usiamo: un attacco completo potrebbe accendere anche altre regole del CRS. Secondo [Frederik Himpe](https://blog.frehi.be/2026/10/21/php2shell-mitigating-with-crs-and-apparmor-before-the-patch/), nel canale Slack del CRS gli attacchi noti sono stati fermati da più regole del livello 1: fonte di seconda mano, non verificata.
 - **L'unica correzione è aggiornare PHP.** Il WAF compra tempo.
-- `curl` aggiunge da solo `Expect: 100-continue` ai corpi grandi e il CRS lo blocca (regola 920450): lo script lo toglie, altrimenti si misura curl e non la forma.
+- `curl` aggiunge da solo `Expect: 100-continue` ai corpi grandi e il CRS lo blocca (regola 920450): lo script lo toglie, altrimenti si misura curl e non la richiesta.
 
 ## Cosa ne esce
 

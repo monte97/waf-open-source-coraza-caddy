@@ -30,14 +30,28 @@ Misurato il 24/10/2026, immagine `coraza-crs:4.30.0-caddy-alpine-202610110510`, 
 | | nowaf | waf | plugin | su-misura |
 |---|---|---|---|---|
 | operazioni da utente che funzionano (su 17) | 17 | 5 | 9 | 17 |
-| attacchi fermati (su 6) | 0 | 6 | 6 | 4 |
+| attacchi fermati (su 6) | 0 | 6 | 6 | 4, più 2 lasciati all'app |
 
 - **Al livello 1, così com'è, Nextcloud non sincronizza.** PROPFIND, MKCOL, PUT, MOVE e DELETE non sono fra i metodi ammessi (911100).
 - **Il plugin ripara i metodi, non gli upload.** Coraza legge come form anche un corpo senza Content-Type o con un tipo che non conosce (image/jpeg): il contenuto del file finisce in `ARGS_NAMES` e le regole lo leggono. Una foto da 300 KB accende più di dieci regole e prende 10.285 punti (una regola con multiMatch conta per ogni pezzo); un file `.sql` con una query, la 942100. In più c'è il limite del corpo: un video da 20 MB riceve 413.
 - **`git clone` e `git push` via HTTP si fermano su Gitea.** La 930130 vede `.git/` nel percorso (`/prova/prove-waf.git/info/refs`) e lo tratta come un file riservato.
 - **Una issue che parla di codice si ferma.** Una query o un `ls -la /etc/passwd` nel testo accendono le regole SQL e RCE su `ARGS:json.body`.
 - **Senza WAF gli attacchi arrivano, ma non riescono.** Nextcloud rifiuta il login con la SQL injection, il `../` dà 404, la web shell resta un file (riletta, è solo testo), Gitea mostra lo `<script>` come testo e la ricerca con la UNION come testo nel campo. Con questi attacchi classici le app si difendono da sole: il WAF serve per le falle che non conoscono.
-- **Il su misura ha un prezzo, ed è in tabella.** Non leggere il corpo dei PUT WebDAV fa passare anche una web shell PHP caricata come file; non guardare `json.body` delle issue fa passare un XSS nel testo. «Passato» vuol dire arrivato all'applicazione: se poi ci casca dipende da lei, ma il WAF lì non c'è più.
+- **Il su misura esclude solo dove l'app si difende da sola.** Le due esclusioni (il corpo dei PUT WebDAV, il testo delle issue) cadono proprio dove `make senza-waf` mostra che l'app respinge l'attacco: la web shell caricata resta un file di testo, l'XSS nel testo di una issue resta testo. In tabella quei due attacchi compaiono come «all'app», non come «passato». Gli altri restano al WAF. La regola: si esclude dove l'app è sicura, mai per coprire un'app vulnerabile.
+
+## Nuclei contro le app vere
+
+Misurato il 24/10/2026 con `bash misure/nuclei.sh` (stessi template della demo principale: `exposure,lfi,sqli,xss,rce,misconfig`, 100 richieste al secondo), senza WAF sulla 8082 e con il profilo `su-misura` sulla 8081.
+
+| | richieste | fermate dal WAF | cosa trova Nuclei, oltre agli info |
+|---|---|---|---|
+| Nextcloud, senza WAF | 19.780 | 0 | CVE-2026-109618 (critica) |
+| Nextcloud, su misura | 19.783 | 6.384 (32%) | CVE-2026-109618 (critica) |
+| Gitea, senza WAF | 19.809 | 0 | CVE-2026-59774 (critica), repository pubblici esposti |
+| Gitea, su misura | 19.805 | 6.392 (32%) | repository pubblici esposti |
+
+- Con il WAF tarato un terzo delle richieste dello scanner non arriva alle app, e su Gitea Nuclei non trova più la CVE critica.
+- Nextcloud viene segnalato vulnerabile a PHP2Shell con e senza WAF: l'immagine `nextcloud:29-apache` porta un PHP più vecchio della versione corretta. È un rilevamento di Nuclei, non confermato. Per questo i Caddy pubblicano le porte solo su 127.0.0.1: la demo non deve essere raggiungibile dalla rete.
 
 ## I file
 

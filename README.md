@@ -84,11 +84,11 @@ make php2shell        # la forma di PHP2Shell contro il servizio PHP
 Il 21 ottobre 2026 PHP ha corretto [CVE-2026-109618 e CVE-2026-109619](https://www.php.net/archive/2026.php#2026-10-20-1), due falle che permettono di eseguire codice sul server senza login. La demo ha un servizio PHP sotto `/php/` (immagine `php:8.4.27-apache`, già corretta) per vedere cosa fa il WAF:
 
 ```bash
-make block && make php2shell    # livello 1: la forma dell'attacco passa
-make toppa && make php2shell    # con due regole su misura: due richieste su tre si fermano
+make block && make php2shell    # livello 1: i due indicatori dell'attacco passano
+make toppa && make php2shell    # con due regole su misura: i due indicatori si fermano
 ```
 
-`scripts/php2shell.sh` manda richieste innocue con la forma dell'attacco, nessun exploit. Le regole del profilo `toppa` stanno in [`demo/tuning/toppa/dopo/10-php2shell.conf`](demo/tuning/toppa/dopo/10-php2shell.conf). Numeri e cautele in [`misure/README.md`](misure/README.md#php2shell-la-forma-della-richiesta). L'unica correzione vera è aggiornare PHP: il WAF compra tempo.
+`scripts/php2shell.sh` manda richieste innocue con gli indicatori dell'attacco (il campo `PHP_SESSION_UPLOAD_PROGRESS`, lo user agent dei PoC), nessun exploit: misura se il WAF li riconosce, non se un attacco vero passerebbe. Le regole del profilo `toppa` stanno in [`demo/tuning/toppa/dopo/10-php2shell.conf`](demo/tuning/toppa/dopo/10-php2shell.conf). Numeri e cautele in [`misure/README.md`](misure/README.md#php2shell-gli-indicatori). L'unica correzione vera è aggiornare PHP: il WAF compra tempo.
 
 ## Strumenti da palco
 
@@ -107,7 +107,7 @@ cd demo2                   # la demo principale puo' restare accesa
 make senza-waf             # i 6 attacchi senza WAF (porta 8082): arrivano, e le app li respingono
 make waf && make prove     # livello 1 cosi' com'e': attacchi fermati 6 su 6, cose da utente 5 su 17
 make perche                # chi ha fermato cosa: metodo, percorso, punti, regole
-make su-misura && make prove   # plugin Nextcloud del CRS + quattro correzioni: 17 su 17, ma 4 attacchi su 6
+make su-misura && make prove   # plugin + quattro correzioni: 17 su 17; 4 attacchi fermati, 2 lasciati all'app dove si difende da sola
 ```
 
 Le due demo possono restare accese insieme: `demo/` sta sulla porta 8080, `demo2/` sulla 8081 con il WAF e sulla 8082 senza, e ogni comando legge solo il registro della sua. Dettagli, profili e il prezzo di ogni correzione in [`demo2/README.md`](demo2/README.md).

@@ -10,3 +10,5 @@ demo/caddy_config/
 
 # Report grezzi degli scanner
 misure/risultati/
+demo2/misure/risultati/
+demo2/misure/risultati-sintesi.txt
