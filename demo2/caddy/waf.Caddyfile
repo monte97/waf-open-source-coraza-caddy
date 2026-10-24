@@ -1,0 +1,27 @@
+# Caddyfile CON il WAF, livello 1, nessuna correzione: la configurazione
+# dell'immagine cosi' com'e'. E' lo stato del «giorno che lo accendi».
+{
+	order coraza_waf first
+}
+
+(waf) {
+	coraza_waf {
+		directives `
+			Include /opt/coraza/config/coraza.conf
+			Include /opt/coraza/config/crs-setup.conf
+			Include /opt/coraza/owasp-crs/rules/*.conf
+		`
+	}
+}
+
+http://cloud.localhost {
+	log
+	import waf
+	reverse_proxy nextcloud:80
+}
+
+http://git.localhost {
+	log
+	import waf
+	reverse_proxy gitea:3000
+}

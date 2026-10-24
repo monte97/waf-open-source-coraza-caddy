@@ -1,0 +1,37 @@
+# Caddyfile CON il WAF, livello 1, piu' il plugin Nextcloud del CRS.
+#
+# Un plugin del CRS e' fatto di file con tre suffissi, caricati in tre punti
+# precisi: -config dopo il setup, -before prima delle regole (le esclusioni
+# che devono valere mentre le regole girano), -after dopo le regole. Il
+# plugin Nextcloud non ha la parte -after.
+#
+# Le esclusioni del plugin scattano sui percorsi di Nextcloud
+# (/remote.php/dav, /ocs, ...): stanno nel blocco comune e valgono anche per
+# Gitea, che quei percorsi non li ha.
+{
+	order coraza_waf first
+}
+
+(waf) {
+	coraza_waf {
+		directives `
+			Include /opt/coraza/config/coraza.conf
+			Include /opt/coraza/config/crs-setup.conf
+			Include /opt/coraza/plugins/*-config.conf
+			Include /opt/coraza/plugins/*-before.conf
+			Include /opt/coraza/owasp-crs/rules/*.conf
+		`
+	}
+}
+
+http://cloud.localhost {
+	log
+	import waf
+	reverse_proxy nextcloud:80
+}
+
+http://git.localhost {
+	log
+	import waf
+	reverse_proxy gitea:3000
+}

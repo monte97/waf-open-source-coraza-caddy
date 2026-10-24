@@ -1,0 +1,11 @@
+# Caddyfile SENZA il WAF: due servizi, due nomi, un reverse proxy.
+
+http://cloud.localhost {
+	log
+	reverse_proxy nextcloud:80
+}
+
+http://git.localhost {
+	log
+	reverse_proxy gitea:3000
+}

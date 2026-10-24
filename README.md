@@ -8,6 +8,8 @@ Slide, demo e misure del talk **"WAF open source: una difesa in più per i tuoi 
 
 > Solo da leggere? [`esempio/`](esempio/) ha un `docker-compose.yml` e un `Caddyfile` semplici, senza profili: il WAF acceso al livello 1 davanti a tre servizi.
 
+> Con servizi veri? [`demo2/`](demo2/) mette lo stesso WAF davanti a Nextcloud e Gitea e prova 17 cose da utente e 6 attacchi: al livello 1, così com'è, ne funzionano 5 su 17. Comandi, numeri e correzioni nel suo [README](demo2/README.md).
+
 ## Cos'è
 
 Uno stack WAF (Web Application Firewall) completamente open source davanti a un servizio self-hosted. Ferma SQL injection, XSS e le altre famiglie di attacco coperte dall'OWASP Core Rule Set.
@@ -98,6 +100,17 @@ make toppa && make php2shell    # con due regole su misura: due richieste su tre
 | `make down` | Spegne qualunque profilo sia attivo |
 | `make clean` | Spegne tutto e rimuove i volumi |
 
+## Servizi veri: demo2
+
+```bash
+make down && cd demo2      # spegne la demo principale, entra nella demo2
+make waf && make prove     # livello 1 cosi' com'e': attacchi fermati 6 su 6, cose da utente 5 su 17
+make perche                # chi ha fermato cosa: metodo, percorso, punti, regole
+make su-misura && make prove   # plugin Nextcloud del CRS + quattro correzioni: 17 su 17, ma 4 attacchi su 6
+```
+
+Le due demo si spengono a vicenda quando se ne accende una: `demo/` sta sulla porta 8080, `demo2/` sulla 8081. Dettagli, profili e il prezzo di ogni correzione in [`demo2/README.md`](demo2/README.md).
+
 ## Configurazione e tuning
 
 I due Caddyfile in `demo/caddy/` sono montati davvero: quello che si vede a schermo è quello che gira.
@@ -133,6 +146,7 @@ example.com {
 
 ```
 ├── esempio/                      # la versione da leggere: un compose e un Caddyfile, WAF al livello 1
+├── demo2/                        # il WAF davanti a Nextcloud e Gitea veri: cd demo2 && make help
 ├── demo/
 │   ├── docker-compose.yml        # app, servizio PHP e una variante di Caddy per profilo
 │   ├── app/app.py                # l'applicazione da proteggere, solo libreria standard

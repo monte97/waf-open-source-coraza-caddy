@@ -40,7 +40,7 @@ def sh(*a):
     return subprocess.run(a, capture_output=True, text=True)
 
 nome = servizio = None
-for riga in sh("docker", "ps", "--format", "{{.Names}}\t{{.Label \"com.docker.compose.service\"}}").stdout.splitlines():
+for riga in sh("docker", "ps", "--filter", "label=com.docker.compose.project=demo", "--format", "{{.Names}}\t{{.Label \"com.docker.compose.service\"}}").stdout.splitlines():
     n, s = (riga.split("\t") + [""])[:2]
     if s.startswith("caddy-"):
         nome, servizio = n, s[len("caddy-"):]
@@ -74,16 +74,19 @@ for r in righe:
 print(f"\n{AZZURRO}» il registro di Caddy, profilo {servizio}: le ultime {min(N, len(accessi))} richieste di {len(accessi)}{FINE}\n")
 if not accessi:
     print(f"  {TENUE}nessuna richiesta da quando il profilo e' acceso: prova make raffica{FINE}\n"); sys.exit(0)
-print(f"  {BIANCO}{'ORA':<9} {'ESITO':<9} {'HTTP':<5} {'GIUDIZIO':<16} {'RICHIESTA':<56} REGOLE (punti){FINE}")
+# stretto apposta: sul palco il carattere e' grande (niente colonna dell'ora)
+print(f"  {BIANCO}{'ESITO':<9} {'HTTP':<4} {'GIUDIZIO':<15} {'RICHIESTA':<40} REGOLE (punti){FINE}")
 for ts, metodo, uri, status in accessi[-N:]:
-    ora = time.strftime("%H:%M:%S", time.localtime(ts))
     passa = status < 400
     esito = f"{VERDE}{'passa':<9}{FINE}" if passa else f"{ROSSO}{'bloccata':<9}{FINE}"
     richiesta = f"{metodo} {unquote_plus(uri)}"
-    richiesta = richiesta if len(richiesta) <= 56 else richiesta[:55] + "…"
-    regole = "" if passa else ", ".join(regole_per_id.get(id_per_uri.get(uri, ""), []))
+    richiesta = richiesta if len(richiesta) <= 40 else richiesta[:39] + "…"
+    scattate = [] if passa else regole_per_id.get(id_per_uri.get(uri, ""), [])
+    ids = [s.split()[0] for s in scattate]
+    punti = sum(int(s.split("(")[1].rstrip(")")) for s in scattate if s.split("(")[1].rstrip(")").isdigit())
+    regole = (" ".join(ids[:3]) + (f" +{len(ids) - 3}" if len(ids) > 3 else "") + f" ({punti})") if ids else ""
     g = giudizio(uri, passa)
-    pad = 16 - len(re.sub(r"\033\[[0-9;]*m", "", g))
-    print(f"  {TENUE}{ora:<9}{FINE} {esito} {status:<5} {g}{' ' * pad} {BIANCO}{richiesta:<56}{FINE} {GIALLO}{regole}{FINE}")
+    pad = 15 - len(re.sub(r"\033\[[0-9;]*m", "", g))
+    print(f"  {esito} {status:<4} {g}{' ' * pad} {BIANCO}{richiesta:<40}{FINE} {GIALLO}{regole}{FINE}")
 print(f"\n  {TENUE}giudizio: solo per le richieste di make raffica, di cui sappiamo se sono oneste o attacchi;{FINE}")
 print(f"  {TENUE}per tutte le altre «non so»: il WAF non ha modo di saperlo{FINE}\n")

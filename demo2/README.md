@@ -1,0 +1,46 @@
+# demo2: il WAF davanti a servizi veri
+
+`demo/` misura il WAF da solo, con un backend finto che risponde «ok» a tutto. Qui dietro ci sono Nextcloud 29 e Gitea 1.27, con le cose che fa un utente vero: il client che sincronizza, un upload dal browser, `git clone`, una issue. La domanda è cosa si rompe il giorno che accendi il WAF, e cosa lo ripara.
+
+```bash
+cd demo2
+make waf        # accende Nextcloud, Gitea e il WAF livello 1 (la prima volta: circa un minuto)
+make prove      # 17 cose da utente e 6 attacchi, in tabella
+make perche     # le regole che hanno bloccato, richiesta per richiesta
+make matrice    # le stesse prove sui quattro profili (circa due minuti)
+make help       # tutti i comandi
+```
+
+Porta 8081, così gira insieme a `demo/` (8080). `cloud.localhost` e `git.localhost` risolvono da soli a 127.0.0.1. Utente `prova`, password `prova-demo2-2026`: valori di prova, solo in locale.
+
+## I profili
+
+| Profilo | Cosa c'è davanti |
+|---|---|
+| `nowaf` | solo Caddy |
+| `waf` | Coraza + CRS 4.30, livello 1, configurazione dell'immagine così com'è |
+| `plugin` | come `waf`, più il [plugin Nextcloud del CRS](https://github.com/coreruleset/nextcloud-rule-exclusions-plugin) v1.7.1, in `plugins/nextcloud/` |
+| `su-misura` | come `plugin`, più le correzioni di `correzioni/` (una per Nextcloud, una per Gitea) |
+
+## Cosa è venuto fuori
+
+Misurato il 24/10/2026, immagine `coraza-crs:4.30.0-caddy-alpine-202610110510`, Mac Apple M5.
+
+| | nowaf | waf | plugin | su-misura |
+|---|---|---|---|---|
+| operazioni da utente che funzionano (su 17) | 17 | 5 | 9 | 17 |
+| attacchi fermati (su 6) | 0 | 6 | 6 | 4 |
+
+- **Al livello 1, così com'è, Nextcloud non sincronizza.** PROPFIND, MKCOL, PUT, MOVE e DELETE non sono fra i metodi ammessi (911100).
+- **Il plugin ripara i metodi, non gli upload.** Coraza legge come form anche un corpo senza Content-Type o con un tipo che non conosce (image/jpeg): il contenuto del file finisce in `ARGS_NAMES` e le regole lo leggono. Una foto da 300 KB accende più di dieci regole e prende 10.285 punti (una regola con multiMatch conta per ogni pezzo); un file `.sql` con una query, la 942100. In più c'è il limite del corpo: un video da 20 MB riceve 413.
+- **`git clone` e `git push` via HTTP si fermano su Gitea.** La 930130 vede `.git/` nel percorso (`/prova/prove-waf.git/info/refs`) e lo tratta come un file riservato.
+- **Una issue che parla di codice si ferma.** Una query o un `ls -la /etc/passwd` nel testo accendono le regole SQL e RCE su `ARGS:json.body`.
+- **Il su misura ha un prezzo, ed è in tabella.** Non leggere il corpo dei PUT WebDAV fa passare anche una web shell PHP caricata come file; non guardare `json.body` delle issue fa passare un XSS nel testo. «Passato» vuol dire arrivato all'applicazione: se poi ci casca dipende da lei, ma il WAF lì non c'è più.
+
+## I file
+
+- `docker-compose.yml`: Nextcloud, Gitea e le quattro varianti di Caddy
+- `caddy/`: un Caddyfile per profilo
+- `plugins/nextcloud/`: il plugin, copiato dal repository del CRS al tag v1.7.1
+- `correzioni/`: le correzioni del profilo `su-misura`, commentate
+- `scripts/prove.sh`, `scripts/perche.py`, `scripts/matrice.sh`: le prove, le regole scattate, la tabella

@@ -1,0 +1,112 @@
+# demo2: il WAF davanti a servizi veri, Nextcloud e Gitea.
+#
+# demo/ usa un backend finto che risponde «ok» a tutto: serve a misurare il
+# WAF da solo. Qui dietro ci sono applicazioni vere, con i loro client: il
+# punto e' vedere cosa si rompe il giorno che accendi il WAF, e cosa lo ripara.
+#
+# Dalla cartella demo2/:
+#   make nowaf    solo Caddy, reverse proxy senza WAF
+#   make waf      WAF livello 1, configurazione dell'immagine, nessuna correzione
+#   make plugin   WAF livello 1 con il plugin Nextcloud del CRS
+#   make su-misura   il plugin piu' le correzioni di correzioni/
+#
+# Porta 8081 (demo/ usa la 8080: possono girare insieme). I nomi
+# cloud.localhost e git.localhost puntano a 127.0.0.1 da soli: curl e i
+# browser risolvono *.localhost senza toccare /etc/hosts.
+#
+# Credenziali: valori di prova, solo per questa demo in locale. Utente
+# `prova`, password `prova-demo2-2026`, uguali sui due servizi.
+
+x-caddy: &caddy
+  # La stessa immagine di demo/, con la stessa data: le misure sono confrontabili.
+  image: ghcr.io/coreruleset/coraza-crs:4.30.0-caddy-alpine-202610110510
+  ports:
+    - "8081:80"
+  depends_on:
+    - nextcloud
+    - gitea
+  networks:
+    - demo2
+
+services:
+
+  # Nextcloud con SQLite: si installa da solo al primo avvio (circa un minuto).
+  nextcloud:
+    image: nextcloud:29-apache
+    environment:
+      SQLITE_DATABASE: nextcloud
+      NEXTCLOUD_ADMIN_USER: prova
+      NEXTCLOUD_ADMIN_PASSWORD: prova-demo2-2026
+      NEXTCLOUD_TRUSTED_DOMAINS: cloud.localhost
+      # Il client parla con Caddy sulla 8081: Nextcloud deve saperlo per
+      # costruire gli indirizzi giusti nelle risposte WebDAV.
+      OVERWRITEHOST: cloud.localhost:8081
+      OVERWRITEPROTOCOL: http
+      TRUSTED_PROXIES: 0.0.0.0/0
+    volumes:
+      - nextcloud:/var/www/html
+    networks:
+      - demo2
+
+  # Gitea con SQLite, installazione gia' chiusa: l'utente lo crea `make utenti`.
+  gitea:
+    image: gitea/gitea:1.27.0-rootless
+    environment:
+      GITEA__security__INSTALL_LOCK: "true"
+      GITEA__database__DB_TYPE: sqlite3
+      GITEA__server__DOMAIN: git.localhost
+      GITEA__server__ROOT_URL: http://git.localhost:8081/
+      GITEA__service__DISABLE_REGISTRATION: "true"
+    volumes:
+      - gitea:/var/lib/gitea
+      - gitea-config:/etc/gitea
+    networks:
+      - demo2
+
+  # ── senza WAF ────────────────────────────────────────────────────────────
+  caddy-nowaf:
+    <<: *caddy
+    profiles: ["nowaf"]
+    volumes:
+      - ./caddy/nowaf.Caddyfile:/config/caddy/Caddyfile:ro
+
+  # ── WAF livello 1, come esce dall'immagine ───────────────────────────────
+  caddy-waf:
+    <<: *caddy
+    profiles: ["waf"]
+    environment:
+      CORAZA_RULE_ENGINE: On
+      BLOCKING_PARANOIA: 1
+    volumes:
+      - ./caddy/waf.Caddyfile:/config/caddy/Caddyfile:ro
+
+  # ── WAF livello 1 + plugin Nextcloud del CRS (v1.7.1) ────────────────────
+  caddy-plugin:
+    <<: *caddy
+    profiles: ["plugin"]
+    environment:
+      CORAZA_RULE_ENGINE: On
+      BLOCKING_PARANOIA: 1
+    volumes:
+      - ./caddy/plugin.Caddyfile:/config/caddy/Caddyfile:ro
+      - ./plugins/nextcloud:/opt/coraza/plugins:ro
+
+  # ── plugin + le nostre correzioni (correzioni/*.conf) ────────────────────
+  caddy-su-misura:
+    <<: *caddy
+    profiles: ["su-misura"]
+    environment:
+      CORAZA_RULE_ENGINE: On
+      BLOCKING_PARANOIA: 1
+    volumes:
+      - ./caddy/su-misura.Caddyfile:/config/caddy/Caddyfile:ro
+      - ./plugins/nextcloud:/opt/coraza/plugins:ro
+      - ./correzioni:/opt/coraza/config.d:ro
+
+volumes:
+  nextcloud:
+  gitea:
+  gitea-config:
+
+networks:
+  demo2:

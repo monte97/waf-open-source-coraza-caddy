@@ -21,7 +21,7 @@ def sh(*a):
     return subprocess.run(a, capture_output=True, text=True).stdout.strip()
 
 def container():
-    for riga in sh("docker", "ps", "--format", "{{.Names}}\t{{.Label \"com.docker.compose.service\"}}").splitlines():
+    for riga in sh("docker", "ps", "--filter", "label=com.docker.compose.project=demo", "--format", "{{.Names}}\t{{.Label \"com.docker.compose.service\"}}").splitlines():
         nome, servizio = (riga.split("\t") + [""])[:2]
         if servizio.startswith("caddy-"):
             return nome, servizio[len("caddy-"):]
