@@ -18,11 +18,9 @@ def corto(uri, n=40):
 def sh(*a):
     return subprocess.run(a, capture_output=True, text=True, cwd=sys.path[0] + "/..").stdout
 
-servizio = next((s for s in sh("docker", "compose", "ps", "--services").split() if s.startswith("caddy-")), None)
+servizio = next((s for s in sh("docker", "compose", "ps", "--services").split() if s.startswith("caddy-") and s != "caddy-nowaf"), None)
 if not servizio:
-    print(f"{ROSSO}nessun profilo acceso: prima make waf (o plugin){FINE}"); sys.exit(1)
-if servizio == "caddy-nowaf":
-    print(f"{TENUE}profilo nowaf: senza WAF non c'e' niente da spiegare{FINE}"); sys.exit(0)
+    print(f"{ROSSO}nessun profilo con il WAF acceso: prima make waf (o plugin, su-misura){FINE}"); sys.exit(1)
 
 richieste, ordine, accessi = {}, [], []
 for riga in sh("docker", "compose", "logs", "--no-log-prefix", servizio).splitlines():

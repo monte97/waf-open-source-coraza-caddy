@@ -5,19 +5,20 @@
 ```bash
 cd demo2
 make waf        # accende Nextcloud, Gitea e il WAF livello 1 (la prima volta: circa un minuto)
-make prove      # 17 cose da utente e 6 attacchi, in tabella
+make senza-waf  # i 6 attacchi direttamente alle app, senza WAF: arrivano, e cosa ne fanno le app
+make prove      # 17 cose da utente e 6 attacchi, in tabella, attraverso il WAF
 make perche     # le regole che hanno bloccato, richiesta per richiesta
 make matrice    # le stesse prove sui quattro profili (circa due minuti)
 make help       # tutti i comandi
 ```
 
-Porta 8081, così gira insieme a `demo/` (8080). `cloud.localhost` e `git.localhost` risolvono da soli a 127.0.0.1. Utente `prova`, password `prova-demo2-2026`: valori di prova, solo in locale.
+Porta 8081 con il WAF, 8082 senza: un Caddy senza WAF davanti alle stesse app resta sempre acceso, così il giro senza WAF non richiede di cambiare profilo. `demo/` sta sulla 8080: le due demo possono restare accese insieme. `cloud.localhost` e `git.localhost` risolvono da soli a 127.0.0.1. Utente `prova`, password `prova-demo2-2026`: valori di prova, solo in locale.
 
 ## I profili
 
 | Profilo | Cosa c'è davanti |
 |---|---|
-| `nowaf` | solo Caddy |
+| (sempre acceso, porta 8082) | solo Caddy, nessun WAF: lo usano `make senza-waf` e `make matrice` |
 | `waf` | Coraza + CRS 4.30, livello 1, configurazione dell'immagine così com'è |
 | `plugin` | come `waf`, più il [plugin Nextcloud del CRS](https://github.com/coreruleset/nextcloud-rule-exclusions-plugin) v1.7.1, in `plugins/nextcloud/` |
 | `su-misura` | come `plugin`, più le correzioni di `correzioni/` (una per Nextcloud, una per Gitea) |
@@ -35,6 +36,7 @@ Misurato il 24/10/2026, immagine `coraza-crs:4.30.0-caddy-alpine-202610110510`, 
 - **Il plugin ripara i metodi, non gli upload.** Coraza legge come form anche un corpo senza Content-Type o con un tipo che non conosce (image/jpeg): il contenuto del file finisce in `ARGS_NAMES` e le regole lo leggono. Una foto da 300 KB accende più di dieci regole e prende 10.285 punti (una regola con multiMatch conta per ogni pezzo); un file `.sql` con una query, la 942100. In più c'è il limite del corpo: un video da 20 MB riceve 413.
 - **`git clone` e `git push` via HTTP si fermano su Gitea.** La 930130 vede `.git/` nel percorso (`/prova/prove-waf.git/info/refs`) e lo tratta come un file riservato.
 - **Una issue che parla di codice si ferma.** Una query o un `ls -la /etc/passwd` nel testo accendono le regole SQL e RCE su `ARGS:json.body`.
+- **Senza WAF gli attacchi arrivano, ma non riescono.** Nextcloud rifiuta il login con la SQL injection, il `../` dà 404, la web shell resta un file (riletta, è solo testo), Gitea mostra lo `<script>` come testo e la ricerca con la UNION come testo nel campo. Con questi attacchi classici le app si difendono da sole: il WAF serve per le falle che non conoscono.
 - **Il su misura ha un prezzo, ed è in tabella.** Non leggere il corpo dei PUT WebDAV fa passare anche una web shell PHP caricata come file; non guardare `json.body` delle issue fa passare un XSS nel testo. «Passato» vuol dire arrivato all'applicazione: se poi ci casca dipende da lei, ma il WAF lì non c'è più.
 
 ## I file

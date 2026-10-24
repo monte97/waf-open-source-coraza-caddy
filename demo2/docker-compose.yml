@@ -5,12 +5,12 @@
 # punto e' vedere cosa si rompe il giorno che accendi il WAF, e cosa lo ripara.
 #
 # Dalla cartella demo2/:
-#   make nowaf    solo Caddy, reverse proxy senza WAF
+#   (sempre acceso) Caddy senza WAF sulla porta 8082: make senza-waf
 #   make waf      WAF livello 1, configurazione dell'immagine, nessuna correzione
 #   make plugin   WAF livello 1 con il plugin Nextcloud del CRS
 #   make su-misura   il plugin piu' le correzioni di correzioni/
 #
-# Porta 8081 (demo/ usa la 8080: possono girare insieme). I nomi
+# Porta 8081 con il WAF, 8082 senza (demo/ usa la 8080: girano insieme). I nomi
 # cloud.localhost e git.localhost puntano a 127.0.0.1 da soli: curl e i
 # browser risolvono *.localhost senza toccare /etc/hosts.
 #
@@ -63,10 +63,13 @@ services:
     networks:
       - demo2
 
-  # ── senza WAF ────────────────────────────────────────────────────────────
+  # ── senza WAF, sempre acceso ────────────────────────────────────────────────────────────
+  # Sempre acceso, sulla 8082: le stesse app senza WAF davanti, per provare gli
+  # attacchi «diretti» (make senza-waf) senza cambiare profilo.
   caddy-nowaf:
     <<: *caddy
-    profiles: ["nowaf"]
+    ports:
+      - "8082:80"
     volumes:
       - ./caddy/nowaf.Caddyfile:/config/caddy/Caddyfile:ro
 

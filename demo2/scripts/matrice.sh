@@ -8,6 +8,10 @@ VERDE=$'\e[1;92m'; ROSSO=$'\e[1;91m'; TENUE=$'\e[37m'; BIANCO=$'\e[1;97m'; AZZUR
 PROFILI=(nowaf waf plugin su-misura)
 D=$(mktemp -d); trap 'rm -rf "$D"' EXIT
 for p in "${PROFILI[@]}"; do
+  if [ "$p" = nowaf ]; then   # senza WAF e' sempre acceso, sulla 8082
+    printf "${AZZURRO}» provo senza WAF (porta 8082)${FINE}\n"
+    PORTA=8082 CSV="$D/$p.csv" bash scripts/prove.sh >/dev/null 2>&1; continue
+  fi
   make -s "$p" >/dev/null || { echo "${ROSSO}il profilo $p non parte${FINE}"; exit 1; }
   printf "${AZZURRO}» provo il profilo %s${FINE}\n" "$p"
   CSV="$D/$p.csv" bash scripts/prove.sh >/dev/null 2>&1

@@ -6,8 +6,9 @@
 # di prova li prepara lo script passando DIETRO Caddy (vedi sotto).
 set -u
 cd "$(dirname "$0")/.."
-CLOUD=http://cloud.localhost:8081
-GIT=http://git.localhost:8081
+PORTA=${PORTA:-8081}   # 8081 con il WAF; 8082 senza (lo usa make matrice)
+CLOUD=http://cloud.localhost:$PORTA
+GIT=http://git.localhost:$PORTA
 U=prova; P=prova-demo2-2026
 DAV=$CLOUD/remote.php/dav/files/$U
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
@@ -56,7 +57,7 @@ dietro "${NC[@]}" -T - "$NCDAV/prove-waf/foto.jpg" < "$TMP/foto.jpg"
 for r in prove-waf prove-waf-nuovo; do dietro -X DELETE "http://gitea:3000/api/v1/repos/$U/$r"; done
 dietro -X POST -H 'Content-Type: application/json' -d '{"name":"prove-waf","auto_init":true}' "http://gitea:3000/api/v1/user/repos"
 
-echo "${AZZURRO}» faccio quello che fa un utente, su Nextcloud e Gitea (porta 8081)${FINE}"
+echo "${AZZURRO}» faccio quello che fa un utente, su Nextcloud e Gitea (porta $PORTA)${FINE}"
 echo ""
 linea "┌" "┬" "┐"
 printf "  ${TENUE}│${FINE}%s%s%s%s\n" "$BIANCO$(cella $W1 ESITO)" "$BIANCO$(cella $W2 HTTP)" "$BIANCO$(cella $W3 "COSA FA L'UTENTE")" "$BIANCO$(cella $W4 COME)"
@@ -79,7 +80,7 @@ gruppo "Gitea: browser, git, API"
 linea "├" "┬" "┤"
 riga "$(c "$GIT/explore/repos")"                                         200     "apre l'elenco dei repository"         "GET /explore/repos"
 riga "$(c -X POST -H 'Content-Type: application/json' -d '{"name":"prove-waf-nuovo","auto_init":true}' "$GIT/api/v1/user/repos")" 201 "crea un repository" "POST /api/v1, JSON"
-git -c credential.helper= clone -q "http://$U:$P@git.localhost:8081/$U/prove-waf.git" "$TMP/repo" >/dev/null 2>&1; e=$?
+git -c credential.helper= clone -q "http://$U:$P@git.localhost:$PORTA/$U/prove-waf.git" "$TMP/repo" >/dev/null 2>&1; e=$?
 riga "$([ $e = 0 ] && echo 200 || echo git)" 200 "clona il repository" "git clone (HTTP)"
 if [ -d "$TMP/repo" ]; then
   cp "$TMP/report.sql" "$TMP/repo/"; git -C "$TMP/repo" add . >/dev/null 2>&1

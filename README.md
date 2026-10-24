@@ -103,13 +103,14 @@ make toppa && make php2shell    # con due regole su misura: due richieste su tre
 ## Servizi veri: demo2
 
 ```bash
-make down && cd demo2      # spegne la demo principale, entra nella demo2
+cd demo2                   # la demo principale puo' restare accesa
+make senza-waf             # i 6 attacchi senza WAF (porta 8082): arrivano, e le app li respingono
 make waf && make prove     # livello 1 cosi' com'e': attacchi fermati 6 su 6, cose da utente 5 su 17
 make perche                # chi ha fermato cosa: metodo, percorso, punti, regole
 make su-misura && make prove   # plugin Nextcloud del CRS + quattro correzioni: 17 su 17, ma 4 attacchi su 6
 ```
 
-Le due demo si spengono a vicenda quando se ne accende una: `demo/` sta sulla porta 8080, `demo2/` sulla 8081. Dettagli, profili e il prezzo di ogni correzione in [`demo2/README.md`](demo2/README.md).
+Le due demo possono restare accese insieme: `demo/` sta sulla porta 8080, `demo2/` sulla 8081 con il WAF e sulla 8082 senza, e ogni comando legge solo il registro della sua. Dettagli, profili e il prezzo di ogni correzione in [`demo2/README.md`](demo2/README.md).
 
 ## Configurazione e tuning
 

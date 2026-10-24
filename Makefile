@@ -23,11 +23,6 @@ DESCR_toppa    := livello 1 con le regole per PHP2Shell di tuning/toppa
 # fallisce, il suo output viene stampato e make si ferma.
 define avvia
 	@echo ""
-	@# la demo dei servizi veri (demo2, porta 8081) non serve qui: se e' accesa la spengo
-	@if docker ps --filter label=com.docker.compose.project=demo2 -q | grep -q .; then \
-	   printf "\033[1;96m» spengo la demo dei servizi veri (demo2, porta 8081)\033[0m\n"; \
-	   (cd demo2 && docker compose --profile nowaf --profile waf --profile plugin --profile su-misura down --remove-orphans) >/dev/null 2>&1 || true; \
-	 fi
 	@printf "\033[1;96m» spengo il profilo precedente\033[0m\n"
 	@$(COMPOSE) $(TUTTI) down --remove-orphans >/dev/null 2>&1 || true
 	@printf "\033[1;96m» accendo $(1):\033[0m \033[1;97m%s\033[0m\n" "$(DESCR_$(1))"
